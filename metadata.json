@@ -1,0 +1,6 @@
+{
+  "name": "BROERHOOD36 - South African Tech, Kicks & Lifestyle",
+  "description": "Premium South African youth marketplace for sneakers, smartphones, football jerseys, German hubblies, shisha accessories, and vapes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
