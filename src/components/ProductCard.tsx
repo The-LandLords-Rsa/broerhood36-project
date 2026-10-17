@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
-import {
-  getProductImage,
-  getProductImageCategory,
-  getProductImageFallback,
-  getProductImages
-} from '../lib/autoImages';
+import { getProductImage, getProductImageFallback } from '../lib/autoImages';
 import { Heart, ShoppingBag, Star, Check, SlidersHorizontal } from 'lucide-react';
 
 interface ProductCardProps {
@@ -24,14 +19,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   } = useShop();
 
   const [isAdded, setIsAdded] = useState(false);
-  const imageCategory = getProductImageCategory(product.category);
-  const images = imageCategory? getProductImages(product.name, imageCategory) : null;
   const wishlisted = isWishlisted(product.id);
   const compared = isCompared(product.id);
 
-  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, view: 'top' | 'side' | 'back') => {
+  const handleImageError = (
+    event: React.SyntheticEvent<HTMLImageElement>,
+    view: 'front' | 'top' | 'side' | 'back'
+  ) => {
+    const failedSource = event.currentTarget.currentSrc || event.currentTarget.src;
+    if (event.currentTarget.dataset.failedSource === failedSource) {
+      event.currentTarget.style.display = 'none';
+      return;
+    }
+
     const fallback = getProductImageFallback(product.name, product.category, view);
-    if (fallback && event.currentTarget.src!== fallback) {
+    if (fallback && failedSource !== fallback) {
+      event.currentTarget.dataset.failedSource = failedSource;
       event.currentTarget.src = fallback;
       return;
     }
@@ -98,26 +101,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </button>
       </div>
 
-      {/* Image - WHITE background like Nike/Sportscene */}
+      {/* Product image */}
       <div className="relative aspect-square w-full bg-white overflow-hidden flex items-center justify-center p-3">
         <img
-          src={images?.side || getProductImage(product, 'front')}
+          src={getProductImage(product, 'front')}
           alt={product.name}
           referrerPolicy="no-referrer"
-          className={`object-contain w-full h-full transition-transform duration-300 ${
-            images || product.views?.side? 'group-hover:hidden' : 'group-hover:scale-105'
-          }`}
-          onError={(e) => handleImageError(e, 'side')}
+          className="object-contain w-full h-full"
+          onError={(e) => handleImageError(e, 'front')}
         />
-        {(images || product.views?.side) && (
-          <img
-            src={images?.top || getProductImage(product, 'front')}
-            alt={`${product.name} alternate`}
-            referrerPolicy="no-referrer"
-            className="object-contain w-full h-full hidden group-hover:block"
-            onError={(e) => handleImageError(e, 'top')}
-          />
-        )}
 
         {product.category === 'phones' && (
           <button

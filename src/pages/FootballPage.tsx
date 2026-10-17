@@ -115,11 +115,11 @@ export const FootballPage: React.FC = () => {
               </div>
 
               {/* Jersey Photo */}
-              <div className="relative aspect-4/3 w-full bg-slate-950 rounded-xl overflow-hidden mb-4 p-4 flex items-center justify-center">
+              <div className="relative aspect-4/3 w-full bg-white rounded-xl overflow-hidden mb-4 p-4 flex items-center justify-center">
                 <img
                   src={getProductImage(jersey, 'front')}
                   alt={jersey.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-lg"
+                  className="w-full h-full object-contain rounded-lg"
                 />
                 {jersey.discountPercent && (
                   <span className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md">

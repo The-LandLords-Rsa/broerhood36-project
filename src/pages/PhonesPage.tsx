@@ -139,7 +139,7 @@ export const PhonesPage: React.FC = () => {
                   <img
                     src={getProductImage(phone, 'front')}
                     alt={phone.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-lg"
+                    className="w-full h-full object-cover rounded-lg"
                   />
                   {phone.discountPercent && (
                     <span className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md">

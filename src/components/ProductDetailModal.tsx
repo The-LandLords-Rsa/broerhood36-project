@@ -64,8 +64,15 @@ export const ProductDetailModal: React.FC = () => {
     ? ['top', 'side', 'back']
     : ['front', 'side', 'top', 'back'];
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, view: ProductImageView) => {
+    const failedSource = event.currentTarget.currentSrc || event.currentTarget.src;
+    if (event.currentTarget.dataset.failedSource === failedSource) {
+      event.currentTarget.style.display = 'none';
+      return;
+    }
+
     const fallback = getProductImageFallback(selectedProduct.name, selectedProduct.category, view);
-    if (fallback && event.currentTarget.src !== fallback) {
+    if (fallback && failedSource !== fallback) {
+      event.currentTarget.dataset.failedSource = failedSource;
       event.currentTarget.src = fallback;
       return;
     }
