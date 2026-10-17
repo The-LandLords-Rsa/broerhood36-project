@@ -80,7 +80,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] flex flex-col bg-[#050811] text-slate-100 selection:bg-rose-600 selection:text-white antialiased overflow-x-hidden">
+    <div className="min-h-screen w-full max-w-[100vw] flex flex-col bg-[#080a08] text-slate-100 selection:bg-green-600 selection:text-white antialiased overflow-x-hidden">
       <Navbar onOpenWishlist={() => navigateTo('account')} />
       <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden">
         {renderActivePage()}
@@ -109,6 +109,5 @@ export default function App() {
     </ShopProvider>
   );
 }
-
 
 
