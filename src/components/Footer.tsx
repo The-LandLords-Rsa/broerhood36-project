@@ -208,24 +208,11 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Accepted Payment badges */}
+        {/* Payment availability */}
         <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-slate-400">Secure SA Payments:</span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-semibold text-slate-300">
-              PayFast
-            </span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-semibold text-emerald-400">
-              Ozow Instant EFT
-            </span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-semibold text-blue-400">
-              Visa / Mastercard
-            </span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-semibold text-amber-400">
-              SnapScan
-            </span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-semibold text-rose-400">
-              Cash on Delivery (Gauteng/CT)
+            <span className="text-slate-400">
+              Secure online checkout is temporarily unavailable while payment processing is configured.
             </span>
           </div>
 

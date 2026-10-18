@@ -28,8 +28,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { AccountPage } from './pages/AccountPage';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
-
-const OWNER_EMAIL = 'broer.hood.36@gmail.com';
+import { isOwnerEmail } from './lib/ownerAccess';
 
 const AppContent: React.FC = () => {
   const {
@@ -41,7 +40,7 @@ const AppContent: React.FC = () => {
     setAuthUser
   } = useShop();
 
-  const isOwner = authUser?.email === OWNER_EMAIL;
+  const isOwner = isOwnerEmail(authUser?.email);
 
   const renderActivePage = () => {
     switch (activePage) {
@@ -69,7 +68,7 @@ const AppContent: React.FC = () => {
           return (
             <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 text-center">
               <h1 className="text-2xl font-black text-white mb-2">Access Denied</h1>
-              <p className="text-slate-400 text-sm mb-6">Admin portal is for owner only. Please login with owner account.</p>
+              <p className="text-slate-400 text-sm mb-6">Admin access is limited to the approved owner accounts. Please sign in with an owner account.</p>
               <button onClick={() => navigateTo('home')} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm">Go Home</button>
             </div>
           );
@@ -95,6 +94,8 @@ const AppContent: React.FC = () => {
         onClose={() => setIsAuthModalOpen(false)}
         user={authUser}
         setUser={setAuthUser}
+        onOwnerLogin={() => navigateTo('admin')}
+        onOpenAdmin={() => navigateTo('admin')}
       />
       {/* Download ZIP modal - ONLY for owner */}
       {isOwner && <ProjectDownloadModal />}
@@ -109,5 +110,3 @@ export default function App() {
     </ShopProvider>
   );
 }
-
-

@@ -4,6 +4,8 @@ import { useShop } from '../context/ShopContext';
 import { CATEGORY_HERO_IMAGES, PRODUCTS } from '../data/products';
 import { Product } from '../types';
 import { getProductImage, getProductImageCategory } from '../lib/autoImages';
+import { isOwnerEmail } from '../lib/ownerAccess';
+import ownerSecuritySql from '../../supabase/owner-security.sql?raw';
 import {
   Package,
   DollarSign,
@@ -26,13 +28,19 @@ import {
 } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
-  const { orders, rentalBookings, navigateTo, setIsDownloadModalOpen } = useShop();
+  const { authUser, orders, rentalBookings, navigateTo, setIsDownloadModalOpen } = useShop();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'rentals' | 'products' | 'supabase'>('orders');
   const [dbOrders, setDbOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
+  const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, {
+    courierName: string;
+    trackingNumber: string;
+    estimatedDelivery: string;
+  }>>({});
 
   // New Product Form State
   const [newProductName, setNewProductName] = useState('');
@@ -60,13 +68,13 @@ export const AdminDashboardPage: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        setDbOrders(data);
-      } else {
-        setDbOrders(orders);
-      }
-    } catch (e) {
-      setDbOrders(orders);
+      if (error) throw error;
+      setDbOrders(data || []);
+      setLoadError('');
+    } catch (error) {
+      console.error('Unable to load orders from Supabase:', error);
+      setDbOrders([]);
+      setLoadError('Orders could not be loaded. Check the database connection and owner access policies, then refresh.');
     } finally {
       setLoading(false);
     }
@@ -78,40 +86,102 @@ export const AdminDashboardPage: React.FC = () => {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId)
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No order was updated. Check that this account has owner access.');
       showNotification(`Order #${orderId} marked as ${newStatus}`);
-    } catch (e) {
-      showNotification(`Order status updated locally to ${newStatus}`);
+      setDbOrders((prev) =>
+        prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order))
+      );
+    } catch (error) {
+      console.error('Unable to update order status:', error);
+      showNotification('Order status was not saved. Check your connection and owner permissions.');
     }
+  };
 
-    setDbOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
+  const handleDeliveryUpdate = async (orderId: string, order: Record<string, any>) => {
+    const draft = deliveryDrafts[orderId] || {
+      courierName: order.courier_name || '',
+      trackingNumber: order.tracking_number || '',
+      estimatedDelivery: order.estimated_delivery || ''
+    };
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({
+          courier_name: draft.courierName.trim() || null,
+          tracking_number: draft.trackingNumber.trim() || null,
+          estimated_delivery: draft.estimatedDelivery.trim() || null
+        })
+        .eq('id', orderId)
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No order was updated. Check that this account has owner access.');
+      setDbOrders((previous) => previous.map((item) => item.id === orderId
+        ? {
+            ...item,
+            courier_name: draft.courierName.trim(),
+            tracking_number: draft.trackingNumber.trim(),
+            estimated_delivery: draft.estimatedDelivery.trim()
+          }
+        : item));
+      setDeliveryDrafts((previous) => {
+        const next = { ...previous };
+        delete next[orderId];
+        return next;
+      });
+      showNotification(`Delivery details saved for order #${orderId}`);
+    } catch (error) {
+      console.error('Unable to update delivery details:', error);
+      showNotification('Delivery details were not saved. Check your connection and owner permissions.');
+    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
     if (!window.confirm(`Are you sure you want to delete order #${orderId}?`)) return;
 
     try {
-      await supabase.from('orders').delete().eq('id', orderId);
+      const { data, error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId)
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No order was deleted. Check that this account has owner access.');
       showNotification('Order removed from Supabase');
-    } catch (e) {
-      showNotification('Order deleted locally');
+      setDbOrders((prev) => prev.filter((order) => order.id !== orderId));
+    } catch (error) {
+      console.error('Unable to delete order:', error);
+      showNotification('Order was not deleted. Check your connection and owner permissions.');
     }
-
-    setDbOrders((prev) => prev.filter((o) => o.id !== orderId));
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProductName || !newProductPrice) {
-      showNotification('Please provide at least a product name and price.');
+    const parsedPrice = Number(newProductPrice);
+    const parsedStock = Number(newProductStock);
+    const parsedRentalPrice = Number(newProductRentalPrice);
+    if (!newProductName.trim() || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      showNotification('Enter a product name and a valid price greater than zero.');
+      return;
+    }
+    if (!Number.isInteger(parsedStock) || parsedStock < 0) {
+      showNotification('Stock quantity must be a whole number of zero or more.');
+      return;
+    }
+    if (newProductIsRental && (!Number.isFinite(parsedRentalPrice) || parsedRentalPrice <= 0)) {
+      showNotification('Enter a valid daily rental price greater than zero.');
       return;
     }
 
     setSubmittingProduct(true);
-    const parsedPrice = parseFloat(newProductPrice) || 0;
-    const parsedRentalPrice = parseFloat(newProductRentalPrice) || 0;
     const sizesArray = newProductSizes.split(',').map((s) => s.trim()).filter(Boolean);
     const productCategory = newProductCategory as Product['category'];
     const fallbackImage = getProductImageCategory(productCategory)
@@ -120,7 +190,7 @@ export const AdminDashboardPage: React.FC = () => {
 
     const newProd: Product = {
       id: `prod-${Date.now()}`,
-      name: newProductName,
+      name: newProductName.trim(),
       brand: 'BROERHOOD36',
       category: productCategory,
       price: parsedPrice,
@@ -147,23 +217,26 @@ export const AdminDashboardPage: React.FC = () => {
 
     // Try saving to Supabase
     try {
-      await supabase.from('products').insert({
-        name: newProductName,
+      const { error } = await supabase.from('products').insert({
+        name: newProductName.trim(),
         category: newProductCategory,
         price: parsedPrice,
-        stock: parseInt(newProductStock, 10) || 10,
+        stock: parsedStock,
         description: newProductDesc,
-        ...(fallbackImage ? { images: [fallbackImage] } : {}),
+        images: fallbackImage ? [fallbackImage] : [],
         is_rental: newProductIsRental,
         rental_price_per_day: newProductIsRental ? parsedRentalPrice : null,
         sizes: sizesArray
       });
-      showNotification(`"${newProductName}" saved to Supabase & catalog!`);
-    } catch (err) {
-      showNotification(`"${newProductName}" added to active store catalog.`);
+      if (error) throw error;
+      setCatalogProducts((prev) => [newProd, ...prev]);
+      showNotification(`"${newProductName.trim()}" saved to the Supabase products table.`);
+    } catch (error) {
+      console.error('Unable to save product to Supabase:', error);
+      showNotification('Product was not saved. Check the database connection and owner permissions.');
+      setSubmittingProduct(false);
+      return;
     }
-
-    setCatalogProducts((prev) => [newProd, ...prev]);
 
     // Reset Form
     setNewProductName('');
@@ -174,55 +247,7 @@ export const AdminDashboardPage: React.FC = () => {
     setSubmittingProduct(false);
   };
 
-  const sqlScript = `-- RUN THIS IN SUPABASE SQL EDITOR
-create extension if not exists "uuid-ossp";
-create table if not exists products (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  category text not null,
-  price decimal not null,
-  stock int default 10,
-  description text,
-  images jsonb not null,
-  is_rental boolean default false,
-  rental_price_per_day decimal,
-  sizes text[] default array['S','M','L','XL'],
-  created_at timestamp default now()
-);
-create table if not exists orders (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid,
-  customer_name text not null,
-  customer_whatsapp text not null,
-  customer_email text,
-  customer_address text,
-  total decimal not null,
-  status text default 'pending',
-  order_details jsonb not null,
-  is_rental boolean default false,
-  rental_start date,
-  rental_end date,
-  created_at timestamp default now()
-);
-create table if not exists profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  whatsapp text,
-  address text,
-  created_at timestamp default now()
-);
-alter table products enable row level security;
-alter table orders enable row level security;
-alter table profiles enable row level security;
-drop policy if exists "public all" on products; create policy "public all" on products for all using (true) with check (true);
-drop policy if exists "public all" on orders; create policy "public all" on orders for all using (true) with check (true);
-drop policy if exists "public all" on profiles; create policy "public all" on profiles for all using (true) with check (true);
--- STORAGE
-insert into storage.buckets (id, name, public) values ('product-images', 'product-images', true) on conflict (id) do nothing;
-drop policy if exists "public read images" on storage.objects; create policy "public read images" on storage.objects for select using (bucket_id = 'product-images');
-drop policy if exists "allow upload images" on storage.objects; create policy "allow upload images" on storage.objects for insert with check (bucket_id = 'product-images');
-drop policy if exists "allow update images" on storage.objects; create policy "allow update images" on storage.objects for update using (bucket_id = 'product-images');
-drop policy if exists "allow delete images" on storage.objects; create policy "allow delete images" on storage.objects for delete using (bucket_id = 'product-images');`;
+  const sqlScript = ownerSecuritySql;
 
   const copySql = () => {
     navigator.clipboard.writeText(sqlScript);
@@ -231,6 +256,15 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
   };
 
   const totalRevenue = dbOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+  if (!isOwnerEmail(authUser?.email)) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 text-center">
+        <h1 className="text-2xl font-black text-white mb-2">Access Denied</h1>
+        <p className="text-slate-400 text-sm">Sign in with an approved owner account to manage the store.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-8 animate-fadeIn">
@@ -406,7 +440,7 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[720px]">
+            <table className="w-full text-left text-xs min-w-[1120px]">
               <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px] font-bold">
                 <tr>
                   <th className="p-4">Order ID</th>
@@ -416,14 +450,15 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
                   <th className="p-4">Items Summary</th>
                   <th className="p-4">Total</th>
                   <th className="p-4">Status</th>
+                  <th className="p-4">Delivery &amp; Tracking</th>
                   <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80 text-slate-300">
                 {dbOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-slate-500">
-                      No orders recorded yet. Place an order on the storefront to test!
+                    <td colSpan={9} className="p-12 text-center text-slate-500">
+                      {loading ? 'Loading orders...' : loadError || 'No orders recorded yet.'}
                     </td>
                   </tr>
                 ) : (
@@ -445,6 +480,11 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
                     } else {
                       itemsDesc = 'BROERHOOD36 Gear';
                     }
+                    const delivery = deliveryDrafts[ord.id] || {
+                      courierName: ord.courier_name || '',
+                      trackingNumber: ord.tracking_number || '',
+                      estimatedDelivery: ord.estimated_delivery || ''
+                    };
 
                     return (
                       <tr key={ord.id} className="hover:bg-slate-800/40 transition">
@@ -488,6 +528,46 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
                             <option value="delivered">Delivered</option>
                             <option value="whatsapp_order">WhatsApp Order</option>
                           </select>
+                        </td>
+                        <td className="p-4">
+                          <div className="space-y-1.5">
+                            <input
+                              aria-label={`Courier for order ${shortId}`}
+                              value={delivery.courierName}
+                              onChange={(event) => setDeliveryDrafts((previous) => ({
+                                ...previous,
+                                [ord.id]: { ...delivery, courierName: event.target.value }
+                              }))}
+                              placeholder="Courier"
+                              className="w-36 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"
+                            />
+                            <input
+                              aria-label={`Tracking number for order ${shortId}`}
+                              value={delivery.trackingNumber}
+                              onChange={(event) => setDeliveryDrafts((previous) => ({
+                                ...previous,
+                                [ord.id]: { ...delivery, trackingNumber: event.target.value }
+                              }))}
+                              placeholder="Tracking number"
+                              className="w-36 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"
+                            />
+                            <input
+                              aria-label={`Estimated delivery for order ${shortId}`}
+                              value={delivery.estimatedDelivery}
+                              onChange={(event) => setDeliveryDrafts((previous) => ({
+                                ...previous,
+                                [ord.id]: { ...delivery, estimatedDelivery: event.target.value }
+                              }))}
+                              placeholder="ETA"
+                              className="w-36 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"
+                            />
+                            <button
+                              onClick={() => handleDeliveryUpdate(ord.id, ord)}
+                              className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300"
+                            >
+                              Save delivery
+                            </button>
+                          </div>
                         </td>
                         <td className="p-4 text-right">
                           <button
@@ -608,7 +688,7 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
                   Add New Product to Store &amp; Supabase
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Creates an item in the live catalog and inserts into the Supabase 'products' table.
+                  Saves a product record to Supabase. The current storefront catalog is still managed in the source data.
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-blue-950 border border-blue-500/30 text-blue-400 text-xs font-bold">
@@ -731,7 +811,7 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
           {/* Current Catalog Summary */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4">
             <h3 className="font-heading font-black text-xl text-white">
-              Active Store Catalog ({catalogProducts.length} Items)
+              Storefront Source Catalog ({catalogProducts.length} Items)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {catalogProducts.slice(0, 8).map((p) => (

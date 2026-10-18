@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
+import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../data/products';
 import { getProductImage } from '../lib/autoImages';
 import {
@@ -35,9 +36,9 @@ export const AccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist' | 'addresses' | 'settings'>('orders');
 
   // Profile Form state
-  const [profileName, setProfileName] = useState(authUser?.user_metadata?.full_name || 'Sipho Ndlovu');
-  const [profileEmail, setProfileEmail] = useState(authUser?.email || 'sipho.ndlovu@gmail.com');
-  const [profilePhone, setProfilePhone] = useState('+27 82 459 1032');
+  const [profileName, setProfileName] = useState(authUser?.user_metadata?.full_name || 'Broerhood36 Member');
+  const [profileEmail, setProfileEmail] = useState(authUser?.email || '');
+  const [profilePhone, setProfilePhone] = useState(authUser?.user_metadata?.phone || '');
   const [isSavedProfile, setIsSavedProfile] = useState(false);
 
   const wishlistedProducts = PRODUCTS.filter((p) => wishlist.includes(p.id));
@@ -46,6 +47,15 @@ export const AccountPage: React.FC = () => {
     e.preventDefault();
     setIsSavedProfile(true);
     setTimeout(() => setIsSavedProfile(false), 2000);
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      window.alert(`Unable to sign out: ${error.message}`);
+      return;
+    }
+    setAuthUser(null);
   };
 
   const handleTrackSpecificOrder = (order: any) => {
@@ -75,10 +85,7 @@ export const AccountPage: React.FC = () => {
         <div className="flex items-center gap-3 self-start sm:self-auto">
           {authUser ? (
             <button
-              onClick={() => {
-                setAuthUser(null);
-                localStorage.removeItem('broerhood_user');
-              }}
+              onClick={handleSignOut}
               className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition"
             >
               <LogOut className="w-3.5 h-3.5" />

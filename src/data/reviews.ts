@@ -56,7 +56,7 @@ export const TRUST_FEATURES = [
   },
   {
     title: 'Convenient Ordering',
-    description: 'Instant local checkout via PayFast, Ozow instant EFT, cards, or Cash on Delivery in major metro zones with real-time WhatsApp updates.',
+    description: 'A streamlined shopping experience with order updates and reliable nationwide delivery.',
     iconName: 'Smartphone'
   },
   {

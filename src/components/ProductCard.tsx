@@ -66,7 +66,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <div
       onClick={() => openProductModal(product)}
-      className="group relative flex flex-col bg-[#121212] rounded-md border border-[#27272A] overflow-hidden hover:border-[#22C55E]/50 transition-all duration-200 cursor-pointer"
+      className="glass-card group relative flex flex-col bg-[#121212] rounded-md border border-[#27272A] overflow-hidden hover:border-[#22C55E]/50 transition-all duration-200 cursor-pointer"
     >
       {/* Top badges & Wishlist - GREEN NOT BLUE */}
       <div className="absolute top-2 inset-x-2 z-10 flex items-center justify-between pointer-events-none">

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { CONFIG } from '../lib/supabase';
+import { isOwnerEmail } from '../lib/ownerAccess';
+import ownerSecuritySql from '../../supabase/owner-security.sql?raw';
 import {
   Search,
   ShoppingBag,
@@ -53,54 +55,7 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
     setMobileMenuOpen(false);
   };
 
-  const sqlScript = `-- RUN THIS IN SUPABASE SQL EDITOR
-create extension if not exists "uuid-ossp";
-create table if not exists products (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  category text not null,
-  price decimal not null,
-  stock int default 10,
-  description text,
-  images jsonb not null,
-  is_rental boolean default false,
-  rental_price_per_day decimal,
-  sizes text[] default array['S','M','L','XL'],
-  created_at timestamp default now()
-);
-create table if not exists orders (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid,
-  customer_name text not null,
-  customer_whatsapp text not null,
-  customer_email text,
-  customer_address text,
-  total decimal not null,
-  status text default 'pending',
-  order_details jsonb not null,
-  is_rental boolean default false,
-  rental_start date,
-  rental_end date,
-  created_at timestamp default now()
-);
-create table if not exists profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  whatsapp text,
-  address text,
-  created_at timestamp default now()
-);
-alter table products enable row level security;
-alter table orders enable row level security;
-alter table profiles enable row level security;
-drop policy if exists "public all" on products; create policy "public all" on products for all using (true) with check (true);
-drop policy if exists "public all" on orders; create policy "public all" on orders for all using (true) with check (true);
-drop policy if exists "public all" on profiles; create policy "public all" on profiles for all using (true) with check (true);
-insert into storage.buckets (id, name, public) values ('product-images', 'product-images', true) on conflict (id) do nothing;
-drop policy if exists "public read images" on storage.objects; create policy "public read images" on storage.objects for select using (bucket_id = 'product-images');
-drop policy if exists "allow upload images" on storage.objects; create policy "allow upload images" on storage.objects for insert with check (bucket_id = 'product-images');
-drop policy if exists "allow update images" on storage.objects; create policy "allow update images" on storage.objects for update using (bucket_id = 'product-images');
-drop policy if exists "allow delete images" on storage.objects; create policy "allow delete images" on storage.objects for delete using (bucket_id = 'product-images');`;
+  const sqlScript = ownerSecuritySql;
 
   const copySql = () => {
     navigator.clipboard.writeText(sqlScript);
@@ -118,7 +73,7 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
             <span className="hidden sm:inline text-slate-500">·</span>
             <span className="hidden sm:inline text-slate-300">Code: <strong className="text-white bg-blue-600/30 px-1 py-0.5 rounded border border-blue-500/40">BROERHOOD10</strong></span>
           </div>
-         {authUser?.email === 'broer.hood.36@gmail.com' && (
+         {isOwnerEmail(authUser?.email) && (
       <div className="hidden md:flex items-center gap-3">
         <button onClick={() => handleNavClick('admin')} className="text-blue-400 font-bold">Admin Portal</button>
         <button onClick={() => setShowSqlGuide(!showSqlGuide)} className="text-blue-400"><Code2 /> SQL Guide</button>
@@ -186,7 +141,7 @@ drop policy if exists "allow delete images" on storage.objects; create policy "a
               })}
             </div>
            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
-  {authUser?.email === 'broer.hood.36@gmail.com' && (
+  {isOwnerEmail(authUser?.email) && (
     <>
       <button onClick={() => handleNavClick('admin')} className="w-full py-2.5 text-center text-xs font-bold text-blue-400 bg-slate-900 rounded-lg">Admin Orders Console</button>
       <button

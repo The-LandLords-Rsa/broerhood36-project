@@ -46,7 +46,7 @@ export const ContactPage: React.FC = () => {
     },
     {
       q: 'What payment methods do you support?',
-      a: 'We accept all South African bank cards via PayFast, Ozow Instant EFT (Capitec, FNB, Standard Bank, ABSA, Nedbank), and Cash on Delivery in selected Gauteng and Cape Town areas.'
+      a: 'Secure online checkout is temporarily unavailable while our payment processing is configured. We do not accept cash on delivery or manual bank transfers.'
     }
   ];
 

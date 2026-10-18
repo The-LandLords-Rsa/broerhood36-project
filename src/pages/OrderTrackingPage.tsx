@@ -31,7 +31,7 @@ export const OrderTrackingPage: React.FC = () => {
 
   const trackingSteps: { status: OrderStatus; label: string; desc: string }[] = [
     { status: 'placed', label: 'Order Placed', desc: 'Received in Broerhood36 system' },
-    { status: 'payment_confirmed', label: 'Payment Confirmed', desc: 'PayFast / Ozow verified' },
+    { status: 'payment_confirmed', label: 'Payment Confirmed', desc: 'Payment independently verified' },
     { status: 'processing', label: 'Processing', desc: 'Packed & inspected at JHB Depot' },
     { status: 'dispatched', label: 'Dispatched', desc: 'Handed over to The Courier Guy' },
     { status: 'out_for_delivery', label: 'Out for Delivery', desc: 'With local driver on vehicle' },

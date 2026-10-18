@@ -3,6 +3,7 @@ import { useShop } from '../context/ShopContext';
 import { PRODUCTS } from '../data/products';
 import { Product, RentalBookingRequest } from '../types';
 import { supabase, CONFIG } from '../lib/supabase';
+import { isValidEmail, isValidName, isValidSouthAfricanPhone } from '../lib/formValidation';
 import {
   Calendar,
   CheckCircle2,
@@ -21,31 +22,22 @@ export const RentalsPage: React.FC = () => {
   const { addRentalBooking, navigateTo } = useShop();
 
   const hubblyOptions = PRODUCTS.filter((p) => p.category === 'hubblies');
+  const toLocalDateString = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(() => toLocalDateString(today));
 
   // Form State
   const [selectedHubbly, setSelectedHubbly] = useState<Product>(hubblyOptions[0]);
   const [durationDays, setDurationDays] = useState<number>(1);
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedDay, setSelectedDay] = useState<number>(18); // default day in October 2026
   const [eventType, setEventType] = useState<string>('Rooftop Gathering / Braai');
-  const [eventLocation, setEventLocation] = useState<string>('Sandton, Johannesburg');
+  const [eventLocation, setEventLocation] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [deliveryNotes, setDeliveryNotes] = useState<string>('');
   const [submittedBooking, setSubmittedBooking] = useState<RentalBookingRequest | null>(null);
-
-  // Calendar dates matrix for October 2026
-  // Days 1 to 31
-  // Mock statuses: 5, 12, 24 are Reserved; 10, 25 are Unavailable; rest are Available
-  const reservedDays = [5, 12, 13, 24];
-  const unavailableDays = [1, 2, 9, 25];
-
-  const getDayStatus = (d: number) => {
-    if (unavailableDays.includes(d)) return 'unavailable';
-    if (reservedDays.includes(d)) return 'reserved';
-    return 'available';
-  };
 
   const dailyRate = selectedHubbly.rentalDetails?.dailyRate || 400;
   const deposit = selectedHubbly.rentalDetails?.deposit || 1200;
@@ -54,19 +46,34 @@ export const RentalsPage: React.FC = () => {
 
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !phone || !email) {
-      alert('Please fill in your name, phone number, and email.');
+    if (!isValidName(customerName) || !isValidEmail(email) || !isValidSouthAfricanPhone(phone)) {
+      window.alert('Enter a valid name, email address, and South African phone number.');
+      return;
+    }
+    if (eventLocation.trim().length < 5) {
+      window.alert('Enter the event delivery address or location.');
+      return;
+    }
+    const start = new Date(`${selectedDate}T12:00:00`);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    if (Number.isNaN(start.getTime()) || start < currentDate) {
+      window.alert('Choose a valid rental date that is today or later.');
       return;
     }
 
-    const bookingId = `RENT-${Date.now().toString().slice(-6)}`;
+    const bookingId = crypto.randomUUID();
+    const end = new Date(`${selectedDate}T12:00:00`);
+    end.setDate(end.getDate() + durationDays);
+    const rentalDate = new Intl.DateTimeFormat('en-ZA', { dateStyle: 'long' }).format(start);
+    const rentalEnd = toLocalDateString(end);
     const booking: RentalBookingRequest = {
       id: bookingId,
       product: selectedHubbly,
       customerName,
       email,
       phone,
-      rentalDate: `${selectedDay} October 2026`,
+      rentalDate,
       durationDays,
       quantity,
       eventType,
@@ -75,14 +82,13 @@ export const RentalsPage: React.FC = () => {
       dailyRate,
       deposit,
       totalAmount,
-      status: 'Confirmed'
+      status: 'Pending Review'
     };
-
-    addRentalBooking(booking);
 
     // Save rental to Supabase orders table
     try {
-      await supabase.from('orders').insert({
+      const { error } = await supabase.from('orders').insert({
+        id: bookingId,
         customer_name: customerName,
         customer_whatsapp: phone,
         customer_email: email,
@@ -95,19 +101,23 @@ export const RentalsPage: React.FC = () => {
             product: selectedHubbly.name,
             durationDays,
             quantity,
-            rentalDate: `${selectedDay} October 2026`,
+            rentalDate,
             deposit,
             dailyRate
           }
         ],
         is_rental: true,
-        rental_start: `2026-10-${selectedDay.toString().padStart(2, '0')}`,
-        rental_end: `2026-10-${Math.min(31, selectedDay + durationDays).toString().padStart(2, '0')}`
+        rental_start: selectedDate,
+        rental_end: rentalEnd
       });
-    } catch (err) {
-      console.warn('Supabase rental sync note:', err);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Unable to save the rental request:', error);
+      window.alert('We could not save your rental request. Please try again or contact the store.');
+      return;
     }
 
+    addRentalBooking(booking);
     setSubmittedBooking(booking);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -353,75 +363,32 @@ export const RentalsPage: React.FC = () => {
                     3
                   </span>
                   <h3 className="font-heading font-black text-xl text-white">
-                    Select Event Date (October 2026)
+                    Select Event Date
                   </h3>
                 </div>
               </div>
 
-              {/* Status Legend */}
-              <div className="flex items-center gap-4 text-xs pt-1">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <span className="w-3 h-3 rounded-full bg-blue-600" />
-                  Available
-                </span>
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  <span className="w-3 h-3 rounded-full bg-amber-600" />
-                  Reserved
-                </span>
-                <span className="flex items-center gap-1.5 text-slate-500">
-                  <span className="w-3 h-3 rounded-full bg-slate-800" />
-                  Unavailable
-                </span>
-              </div>
-
-              {/* Calendar Grid */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                <div className="grid grid-cols-7 gap-2 text-center text-xs text-slate-400 font-bold mb-2">
-                  <span>Mon</span>
-                  <span>Tue</span>
-                  <span>Wed</span>
-                  <span>Thu</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                  <span>Sun</span>
-                </div>
-
-                <div className="grid grid-cols-7 gap-2">
-                  {[...Array(31)].map((_, idx) => {
-                    const day = idx + 1;
-                    const status = getDayStatus(day);
-                    const isSelected = selectedDay === day;
-
-                    return (
-                      <button
-                        type="button"
-                        key={day}
-                        disabled={status === 'unavailable'}
-                        onClick={() => setSelectedDay(day)}
-                        className={`h-11 rounded-xl text-xs font-bold flex flex-col items-center justify-center transition-all ${
-                          isSelected
-                            ? 'bg-rose-600 text-white ring-2 ring-rose-400 shadow-lg'
-                            : status === 'available'
-                            ? 'bg-slate-900 text-slate-200 hover:bg-blue-600/30 hover:border-blue-500 border border-slate-800'
-                            : status === 'reserved'
-                            ? 'bg-amber-950/40 text-amber-300/80 border border-amber-900/40 cursor-not-allowed opacity-75'
-                            : 'bg-slate-950/50 text-slate-600 border border-slate-900 cursor-not-allowed opacity-40'
-                        }`}
-                      >
-                        <span className="font-mono-num">{day}</span>
-                        <span className="text-[9px] uppercase font-semibold">
-                          {status === 'available' ? 'Avail' : status === 'reserved' ? 'Booked' : 'N/A'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div>
+                <label htmlFor="rental-date" className="block text-xs font-semibold text-slate-300 mb-2">
+                  Rental start date
+                </label>
+                <input
+                  id="rental-date"
+                  type="date"
+                  required
+                  min={toLocalDateString(today)}
+                  value={selectedDate}
+                  onChange={(event) => setSelectedDate(event.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                />
               </div>
 
               <div className="text-xs text-slate-400">
                 Selected Booking Date:{' '}
                 <strong className="text-white font-mono-num font-bold">
-                  {selectedDay} October 2026 ({durationDays} Day Duration)
+                  {selectedDate
+                    ? new Intl.DateTimeFormat('en-ZA', { dateStyle: 'long' }).format(new Date(`${selectedDate}T12:00:00`))
+                    : 'Choose a date'} ({durationDays} Day Duration)
                 </strong>
               </div>
             </div>

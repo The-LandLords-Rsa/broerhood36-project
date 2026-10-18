@@ -1,19 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
+import { CONFIG, supabase } from '../lib/supabase';
+import { isValidEmail, isValidName, isValidSouthAfricanPhone } from '../lib/formValidation';
+import { isOwnerEmail } from '../lib/ownerAccess';
 import { X, Lock, Mail, ShieldCheck, LogOut, CheckCircle2 } from 'lucide-react';
+
+const getAuthErrorMessage = (error: unknown, action: string): string => {
+  if (error instanceof Error && /failed to fetch|network request failed|networkerror/i.test(error.message)) {
+    return `Could not reach Supabase Auth at ${new URL(CONFIG.SUPABASE_URL).host}. Verify the project URL and that the Supabase project is active, then try again.`;
+  }
+  return error instanceof Error ? error.message : `${action} failed. Please check your connection and try again.`;
+};
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: any;
-  setUser: (user: any) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
+  onOwnerLogin: () => void;
+  onOpenAdmin: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, setUser }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  user,
+  setUser,
+  onOwnerLogin,
+  onOpenAdmin
+}) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,11 +52,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    if (!isValidEmail(email)) {
+      setErrorMsg('Enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setErrorMsg('Enter your password.');
+      return;
+    }
     setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password
       });
 
@@ -44,21 +73,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
       }
 
       setUser(data.user);
+      if (isOwnerEmail(data.user.email)) {
+        setSuccessMsg('Admin login verified. Opening the admin dashboard.');
+        setTimeout(() => {
+          onClose();
+          onOwnerLogin();
+        }, 500);
+        return;
+      }
       setSuccessMsg('Logged in successfully!');
       setTimeout(() => {
         onClose();
       }, 1000);
-    } catch (err: any) {
-      // Local fallback for offline / mock testing if Supabase project isn't live yet
-      if (err.message?.includes('FetchError') || err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch')) {
-        const mockUser = { email, id: `user-${Date.now()}` };
-        setUser(mockUser);
-        localStorage.setItem('broerhood_user', JSON.stringify(mockUser));
-        setSuccessMsg('Signed in (Local Session Active)');
-        setTimeout(() => onClose(), 1000);
-      } else {
-        setErrorMsg(err.message || 'Login failed. Please check credentials.');
-      }
+    } catch (err: unknown) {
+      setErrorMsg(getAuthErrorMessage(err, 'Login'));
     } finally {
       setLoading(false);
     }
@@ -68,15 +96,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    const normalizedEmail = email.trim().toLowerCase();
+    if (isOwnerEmail(normalizedEmail)) {
+      setErrorMsg('The admin account cannot be created through public signup. Sign in, or have the owner reset the password in Supabase.');
+      return;
+    }
+    if (!isValidName(fullName)) {
+      setErrorMsg('Enter a name between 2 and 100 characters.');
+      return;
+    }
+    if (!isValidEmail(normalizedEmail)) {
+      setErrorMsg('Enter a valid email address.');
+      return;
+    }
+    if (!isValidSouthAfricanPhone(phone)) {
+      setErrorMsg('Enter a valid South African phone number.');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg('Your password must be at least 8 characters long.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('The passwords do not match.');
+      return;
+    }
     setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           data: {
-            full_name: fullName
+            full_name: fullName.trim(),
+            phone: phone.trim()
           }
         }
       });
@@ -85,7 +139,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
         throw error;
       }
 
-      if (data.user) {
+      if (data.session && data.user) {
         setUser(data.user);
         setSuccessMsg('Account created successfully!');
         setTimeout(() => {
@@ -94,28 +148,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
       } else {
         setSuccessMsg('Please check your email inbox to confirm your account.');
       }
-    } catch (err: any) {
-      if (err.message?.includes('FetchError') || err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch')) {
-        const mockUser = { email, id: `user-${Date.now()}`, full_name: fullName };
-        setUser(mockUser);
-        localStorage.setItem('broerhood_user', JSON.stringify(mockUser));
-        setSuccessMsg('Account registered (Local Session Active)');
-        setTimeout(() => onClose(), 1000);
-      } else {
-        setErrorMsg(err.message || 'Registration error.');
-      }
+    } catch (err: unknown) {
+      setErrorMsg(getAuthErrorMessage(err, 'Registration'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.warn('Sign out warning:', e);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setErrorMsg(`Unable to sign out: ${error.message}`);
+      return;
     }
-    localStorage.removeItem('broerhood_user');
     setUser(null);
     onClose();
   };
@@ -138,15 +183,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
             </div>
             <div>
               <span className="text-[11px] font-bold text-blue-400 uppercase tracking-widest block">
-                BROERHOOD36 MEMBER
+              {isOwnerEmail(user.email) ? 'BROERHOOD36 ADMIN' : 'BROERHOOD36 MEMBER'}
               </span>
               <h3 className="font-heading font-black text-2xl text-white mt-1">
                 {user.email}
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Session active across your devices.
+                {isOwnerEmail(user.email) ? 'Admin session verified.' : 'Session active across your devices.'}
               </p>
             </div>
+            {isOwnerEmail(user.email) && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAdmin();
+                }}
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+              >
+                Open Admin Dashboard
+              </button>
+            )}
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-500/40 text-rose-300 text-xs text-center font-medium">
+                {errorMsg}
+              </div>
+            )}
             <button
               onClick={handleLogout}
               className="w-full py-3 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-400 hover:text-white font-bold text-xs transition flex items-center justify-center gap-2"
@@ -192,9 +253,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
                   <input
                     type="text"
                     required
+                    minLength={2}
+                    maxLength={100}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Sipho Ndlovu"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              )}
+
+              {!isLogin && (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">South African Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+27 82 123 4567"
+                    autoComplete="tel"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -210,6 +288,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="sipho@example.co.za"
+                    autoComplete="email"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -222,13 +301,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
                   <input
                     type="password"
                     required
+                    minLength={isLogin ? undefined : 8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
+
+              {!isLogin && (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter your password"
+                      autoComplete="new-password"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -247,6 +347,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, set
                   setIsLogin(!isLogin);
                   setErrorMsg('');
                   setSuccessMsg('');
+                  setConfirmPassword('');
                 }}
                 className="text-blue-400 hover:text-white font-bold ml-1 underline"
               >

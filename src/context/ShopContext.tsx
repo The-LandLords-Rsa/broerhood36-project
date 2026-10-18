@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { Product, CartItem, Order, RentalBookingRequest } from '../types';
 import { PRODUCTS } from '../data/products';
 
@@ -68,8 +69,8 @@ interface ShopContextType {
   isCompareModalOpen: boolean;
   setIsCompareModalOpen: (open: boolean) => void;
 
-  authUser: any;
-  setAuthUser: (user: any) => void;
+  authUser: User | null;
+  setAuthUser: (user: User | null) => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
 
@@ -79,47 +80,6 @@ interface ShopContextType {
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
-
-const INITIAL_ORDER: Order = {
-  id: 'BH36-84920',
-  date: '28 Sep 2026',
-  customer: {
-    fullName: 'Sipho Ndlovu',
-    email: 'sipho.ndlovu@gmail.com',
-    phone: '+27 82 459 1032'
-  },
-  address: {
-    street: '142 Jan Smuts Avenue, Rosebank',
-    city: 'Johannesburg',
-    province: 'Gauteng',
-    postalCode: '2196',
-    deliveryNotes: 'Call upon arrival at the security gate'
-  },
-  items: [
-    {
-      id: 'init-item-1',
-      product: PRODUCTS[0], // Jordan 4
-      quantity: 1,
-      selectedSize: 'UK 9',
-      selectedColor: 'Military Black'
-    },
-    {
-      id: 'init-item-2',
-      product: PRODUCTS[5], // 65W GaN Charger
-      quantity: 1,
-      selectedColor: 'Matte Black'
-    }
-  ],
-  subtotal: 5598,
-  deliveryFee: 0,
-  discount: 559,
-  total: 5039,
-  paymentMethod: 'payfast',
-  status: 'out_for_delivery',
-  courierName: 'The Courier Guy South Africa',
-  trackingNumber: 'TCG-ZA-99201488',
-  estimatedDelivery: 'Today by 17:00'
-};
 
 import { supabase } from '../lib/supabase';
 
@@ -145,14 +105,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAgeVerified, setIsAgeVerified] = useState<boolean>(false);
   const [isAgeModalOpen, setIsAgeModalOpen] = useState<boolean>(false);
 
-  const [authUser, setAuthUser] = useState<any>(() => {
-    try {
-      const saved = localStorage.getItem('broerhood_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [authUser, setAuthUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
 
@@ -187,27 +140,28 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const [orders, setOrders] = useState<Order[]>([INITIAL_ORDER]);
-  const [currentOrder, setCurrentOrder] = useState<Order | null>(INITIAL_ORDER);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [rentalBookings, setRentalBookings] = useState<RentalBookingRequest[]>([]);
 
   const [promoCode, setPromoCode] = useState<string>('');
   const [promoDiscountPercent, setPromoDiscountPercent] = useState<number>(0);
 
-  // Check Supabase session on mount
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setAuthUser(session.user);
-          localStorage.setItem('broerhood_user', JSON.stringify(session.user));
-        }
-      } catch (err) {
-        console.warn('Session check note:', err);
+    let isMounted = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) setAuthUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Unable to restore the Supabase session:', error.message);
+        return;
       }
-    };
-    checkSession();
+      if (isMounted) setAuthUser(session?.user ?? null);
+    }).catch((error: unknown) => {
+      console.error('Unable to restore the Supabase session:', error);
+    });
 
     // Listen for #admin route hash changes
     const handleHash = () => {
@@ -217,7 +171,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      window.removeEventListener('hashchange', handleHash);
+    };
   }, []);
 
   // Save cart to localStorage
