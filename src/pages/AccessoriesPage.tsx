@@ -8,14 +8,9 @@ export const AccessoriesPage: React.FC = () => {
 
   const subcategories = [
     { id: 'all', label: 'All Tech Gear' },
-    { id: 'Chargers', label: 'Chargers & GaN' },
+    { id: 'Chargers', label: 'Chargers' },
     { id: 'Power banks', label: 'Power Banks' },
-    { id: 'Headphones', label: 'Headphones & Audio' },
-    { id: 'Phone cases', label: 'Cases & MagSafe' },
-    { id: 'Smart watches', label: 'Smart Watches' },
-    { id: 'Screen protectors', label: 'Screen Protectors' },
-    { id: 'Bluetooth speakers', label: 'Bluetooth Speakers' },
-    { id: 'Charging cables', label: 'Braided Cables' }
+    { id: 'Covers', label: 'Phone Cases' }
   ];
 
   const accessoryProducts = useMemo(() => {

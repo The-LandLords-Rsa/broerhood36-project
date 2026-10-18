@@ -128,12 +128,21 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
             <button onClick={() => handleNavClick('cart')} className="relative flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] sm:text-xs shadow-md">
               <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="hidden sm:inline">Bag</span><span className="bg-white text-blue-950 font-black px-1.5 rounded-full text-[10px]">{cartCount}</span>
             </button>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="xl:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 ml-1">{mobileMenuOpen? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}</button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
+              className="xl:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 ml-1"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
+            </button>
           </div>
         </div>
 
         {mobileMenuOpen && (
-          <div className="xl:hidden w-full max-w-[100vw] bg-slate-950 border-t border-slate-800 px-3 py-4 max-h-[85vh] overflow-y-auto overflow-x-hidden">
+          <div id="mobile-navigation" className="xl:hidden w-full max-w-[100vw] bg-slate-950 border-t border-slate-800 px-3 py-4 max-h-[85vh] overflow-y-auto overflow-x-hidden">
             <div className="grid grid-cols-2 gap-2 mb-4">
               {navLinks.map((link) => {
                 const isActive = activePage === link.id;

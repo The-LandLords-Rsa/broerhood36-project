@@ -6,6 +6,8 @@ Do not send passwords, PayFast passphrases, Meta tokens, or Supabase service-rol
 
 The frontend reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` at build time. Set both in Vercel under **Project → Settings → Environment Variables**, using the Project URL and anon/publishable key from the correct active Supabase project, then redeploy. Never use a `service_role` key in either variable. The app currently retains its existing values as local fallbacks; if those point to an unavailable project, login and signup will fail to fetch.
 
+In Supabase **Authentication → URL Configuration**, set the Site URL to the deployed storefront URL and add that URL (and `http://localhost:3000` for local development) to the allowed redirect URLs. Signup confirmation links return to the storefront origin. A login error saying “Invalid email or password” means the account/password was not accepted by the configured project; verify the account exists there, confirm its email, and check that the deployed environment variables point to that same project. Do not send passwords or private keys when requesting help.
+
 ## 1. Set up the single admin account
 
 1. In Supabase **Authentication → Users**, create or keep the owner account `broer.hood.36@gmail.com` and confirm the address.

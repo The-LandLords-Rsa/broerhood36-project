@@ -9,6 +9,9 @@ const getAuthErrorMessage = (error: unknown, action: string): string => {
   if (error instanceof Error && /failed to fetch|network request failed|networkerror/i.test(error.message)) {
     return `Could not reach Supabase Auth at ${new URL(CONFIG.SUPABASE_URL).host}. Verify the project URL and that the Supabase project is active, then try again.`;
   }
+  if (error instanceof Error && /invalid login credentials/i.test(error.message)) {
+    return 'Email or password is incorrect. Confirm the email is verified and that this account exists in the configured Supabase project. If the details are correct, verify the storefront is connected to the intended project.';
+  }
   return error instanceof Error ? error.message : `${action} failed. Please check your connection and try again.`;
 };
 
@@ -128,6 +131,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         email: normalizedEmail,
         password,
         options: {
+          emailRedirectTo: window.location.origin,
           data: {
             full_name: fullName.trim(),
             phone: phone.trim()

@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
-import { Order, OrderStatus } from '../types';
-import { CONFIG } from '../lib/supabase';
+import { OrderStatus } from '../types';
+import { CONFIG, supabase } from '../lib/supabase';
 import {
   Search,
-  Package,
-  CheckCircle2,
-  Clock,
-  Truck,
-  MapPin,
-  Calendar,
   AlertCircle,
   Copy,
   Check,
@@ -17,16 +11,82 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export const OrderTrackingPage: React.FC = () => {
-  const { orders, currentOrder } = useShop();
+interface TrackedOrder {
+  id: string;
+  status: OrderStatus;
+  trackingNumber: string | null;
+  courierName: string | null;
+  estimatedDelivery: string | null;
+  customerName: string;
+  deliveryAddress: string;
+  total: number | null;
+  items: string[];
+}
 
-  const [inputOrderNumber, setInputOrderNumber] = useState(
-    currentOrder ? currentOrder.id : 'BH36-84920'
-  );
-  const [searchedOrder, setSearchedOrder] = useState<Order | null>(
-    currentOrder || orders[0] || null
-  );
-  const [hasSearched, setHasSearched] = useState(true);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const trackingStatuses: OrderStatus[] = [
+  'placed',
+  'payment_confirmed',
+  'processing',
+  'dispatched',
+  'out_for_delivery',
+  'delivered'
+];
+
+const toTrackedOrder = (row: Record<string, unknown>): TrackedOrder | null => {
+  const rawStatus = typeof row.status === 'string' ? row.status : '';
+  const status = rawStatus === 'pending'
+    ? 'placed'
+    : trackingStatuses.find((value) => value === rawStatus);
+  if (!status || typeof row.id !== 'string') return null;
+
+  const details = Array.isArray(row.order_details) ? row.order_details : [];
+  const items = details.flatMap((detail) => {
+    if (!isRecord(detail)) return [];
+    const productRecord = isRecord(detail.product) ? detail.product : null;
+    const product = typeof detail.product === 'string'
+      ? detail.product
+      : typeof productRecord?.name === 'string'
+        ? productRecord.name
+        : typeof detail.name === 'string'
+          ? detail.name
+          : '';
+    if (!product) return [];
+    const quantity = typeof detail.quantity === 'number' && detail.quantity > 1
+      ? `${detail.quantity} × `
+      : '';
+    return [`${quantity}${product}`];
+  });
+
+  const rawTotal = typeof row.total === 'number'
+    ? row.total
+    : typeof row.total === 'string'
+      ? Number(row.total)
+      : Number.NaN;
+
+  return {
+    id: row.id,
+    status,
+    trackingNumber: typeof row.tracking_number === 'string' ? row.tracking_number : null,
+    courierName: typeof row.courier_name === 'string' ? row.courier_name : null,
+    estimatedDelivery: typeof row.estimated_delivery === 'string' ? row.estimated_delivery : null,
+    customerName: typeof row.customer_name === 'string' ? row.customer_name : 'Customer',
+    deliveryAddress: typeof row.customer_address === 'string' ? row.customer_address : '',
+    total: Number.isFinite(rawTotal) ? rawTotal : null,
+    items
+  };
+};
+
+export const OrderTrackingPage: React.FC = () => {
+  const { authUser, setIsAuthModalOpen } = useShop();
+
+  const [inputOrderNumber, setInputOrderNumber] = useState('');
+  const [searchedOrder, setSearchedOrder] = useState<TrackedOrder | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [copiedWaybill, setCopiedWaybill] = useState(false);
 
   const trackingSteps: { status: OrderStatus; label: string; desc: string }[] = [
@@ -42,20 +102,42 @@ export const OrderTrackingPage: React.FC = () => {
     return trackingSteps.findIndex((s) => s.status === status);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = inputOrderNumber.trim().replace('#', '');
-    const found = orders.find(
-      (o) =>
-        o.id.toLowerCase() === clean.toLowerCase() ||
-        o.trackingNumber.toLowerCase() === clean.toLowerCase()
-    );
-
-    setSearchedOrder(found || null);
+    const clean = inputOrderNumber.trim().replace(/^#/, '');
+    setErrorMsg('');
+    setSearchedOrder(null);
     setHasSearched(true);
+    if (!clean) {
+      setErrorMsg('Enter an order ID or courier tracking number.');
+      return;
+    }
+    if (!authUser) {
+      setErrorMsg('Sign in with the email address used for the order to securely view its details.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const ordersQuery = supabase
+        .from('orders')
+        .select('id, customer_name, customer_address, total, status, order_details, courier_name, tracking_number, estimated_delivery')
+        .in('status', ['pending', 'placed', 'payment_confirmed', 'processing', 'dispatched', 'out_for_delivery', 'delivered']);
+      const isOrderId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clean);
+      const { data, error } = isOrderId
+        ? await ordersQuery.eq('id', clean).maybeSingle()
+        : await ordersQuery.eq('tracking_number', clean).maybeSingle();
+      if (error) throw error;
+      if (data) setSearchedOrder(toTrackedOrder(data as Record<string, unknown>));
+    } catch (error) {
+      console.error('Unable to look up order tracking details:', error);
+      setErrorMsg('We could not look up this order right now. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentStepIndex = searchedOrder ? getStepIndex(searchedOrder.status) : 4;
+  const currentStepIndex = searchedOrder ? Math.max(getStepIndex(searchedOrder.status), 0) : 0;
 
   const copyWaybill = (val: string) => {
     navigator.clipboard.writeText(val);
@@ -74,7 +156,7 @@ export const OrderTrackingPage: React.FC = () => {
           ORDER TRACKING
         </h1>
         <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-          Enter your Broerhood36 order number (e.g. <strong className="text-white">BH36-84920</strong>) or waybill tracking number to follow your parcel from our hub to your door.
+          Sign in with the email used for your order, then enter its order ID or courier tracking number.
         </p>
 
         {/* Search Input */}
@@ -85,17 +167,33 @@ export const OrderTrackingPage: React.FC = () => {
               type="text"
               value={inputOrderNumber}
               onChange={(e) => setInputOrderNumber(e.target.value)}
-              placeholder="Enter order ID e.g. BH36-84920"
+              placeholder="Order ID or tracking number"
+              aria-label="Order ID or courier tracking number"
               className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-3 py-3 text-xs sm:text-sm text-white uppercase focus:outline-none focus:border-blue-500 font-mono-num font-semibold"
             />
           </div>
           <button
             type="submit"
+            disabled={loading}
             className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 shadow-lg shadow-blue-900/30"
           >
-            Track Parcel
+            {loading ? 'Searching...' : 'Track Parcel'}
           </button>
         </form>
+        {errorMsg && (
+          <p role="alert" className="text-xs text-rose-300 mt-3">
+            {errorMsg}
+            {!authUser && (
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="ml-2 font-bold text-blue-300 underline"
+              >
+                Sign in
+              </button>
+            )}
+          </p>
+        )}
       </div>
 
       {/* Tracking Result View */}
@@ -112,27 +210,30 @@ export const OrderTrackingPage: React.FC = () => {
 
             <div>
               <span className="text-slate-400 block">Courier Partner:</span>
-              <strong className="text-white block">{searchedOrder.courierName}</strong>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="font-mono-num text-blue-400">{searchedOrder.trackingNumber}</span>
-                <button
-                  onClick={() => copyWaybill(searchedOrder.trackingNumber)}
-                  className="text-slate-400 hover:text-white"
-                  title="Copy waybill"
-                >
-                  {copiedWaybill ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              </div>
+              <strong className="text-white block">{searchedOrder.courierName || 'Not assigned yet'}</strong>
+              {searchedOrder.trackingNumber && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-mono-num text-blue-400">{searchedOrder.trackingNumber}</span>
+                  <button
+                    onClick={() => copyWaybill(searchedOrder.trackingNumber!)}
+                    className="text-slate-400 hover:text-white"
+                    title="Copy waybill"
+                    aria-label="Copy waybill"
+                  >
+                    {copiedWaybill ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
               <span className="text-slate-400 block">Estimated Arrival:</span>
               <strong className="text-emerald-400 font-mono-num font-bold">
-                {searchedOrder.estimatedDelivery}
+                {searchedOrder.estimatedDelivery || 'To be confirmed'}
               </strong>
             </div>
           </div>
@@ -222,27 +323,6 @@ export const OrderTrackingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Live Checkpoint Updates */}
-          <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-              Recent Courier Scans:
-            </span>
-            <div className="space-y-2 text-xs">
-              <div className="flex items-start justify-between text-slate-300">
-                <span className="font-medium">Parcel loaded onto driver route vehicle (Johannesburg North)</span>
-                <span className="text-slate-500 font-mono-num">Today, 08:42</span>
-              </div>
-              <div className="flex items-start justify-between text-slate-400">
-                <span>Sorted at The Courier Guy Linbro Park Hub</span>
-                <span className="text-slate-500 font-mono-num">Today, 05:15</span>
-              </div>
-              <div className="flex items-start justify-between text-slate-500">
-                <span>Dispatched from Broerhood36 Central Online Fulfillment</span>
-                <span className="text-slate-500 font-mono-num">Yesterday, 17:30</span>
-              </div>
-            </div>
-          </div>
-
           {/* Quick WhatsApp Support & Payment Confirmation on both lines */}
           <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-emerald-950/60 border border-emerald-500/40 space-y-3">
             <div className="flex items-center justify-between">
@@ -258,7 +338,7 @@ export const OrderTrackingPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <a
                 href={`https://wa.me/${CONFIG.WHATSAPP_1}?text=${encodeURIComponent(
-                  `*ORDER INQUIRY / PAYMENT PROOF - BROERHOOD36*\nOrder: #${searchedOrder.id}\nWaybill: ${searchedOrder.trackingNumber}\nCustomer: ${searchedOrder.customer.fullName}\nTotal: R ${searchedOrder.total.toLocaleString()}\nStatus: ${searchedOrder.status}`
+                  `*ORDER INQUIRY / PAYMENT PROOF - BROERHOOD36*\nOrder: #${searchedOrder.id}\nWaybill: ${searchedOrder.trackingNumber || 'Not assigned'}\nCustomer: ${searchedOrder.customerName}\nTotal: R ${searchedOrder.total === null ? 'Unavailable' : searchedOrder.total.toLocaleString()}\nStatus: ${searchedOrder.status}`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -270,7 +350,7 @@ export const OrderTrackingPage: React.FC = () => {
 
               <a
                 href={`https://wa.me/${CONFIG.WHATSAPP_2}?text=${encodeURIComponent(
-                  `*ORDER INQUIRY / PAYMENT PROOF - BROERHOOD36*\nOrder: #${searchedOrder.id}\nWaybill: ${searchedOrder.trackingNumber}\nCustomer: ${searchedOrder.customer.fullName}\nTotal: R ${searchedOrder.total.toLocaleString()}\nStatus: ${searchedOrder.status}`
+                  `*ORDER INQUIRY / PAYMENT PROOF - BROERHOOD36*\nOrder: #${searchedOrder.id}\nWaybill: ${searchedOrder.trackingNumber || 'Not assigned'}\nCustomer: ${searchedOrder.customerName}\nTotal: R ${searchedOrder.total === null ? 'Unavailable' : searchedOrder.total.toLocaleString()}\nStatus: ${searchedOrder.status}`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -286,27 +366,25 @@ export const OrderTrackingPage: React.FC = () => {
           <div className="pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
               <span className="text-slate-400 block">Delivering To:</span>
-              <strong className="text-white block mt-0.5">{searchedOrder.customer.fullName}</strong>
-              <p className="text-slate-400">{searchedOrder.address.street}, {searchedOrder.address.city}, {searchedOrder.address.province}</p>
+              <strong className="text-white block mt-0.5">{searchedOrder.customerName}</strong>
+              <p className="text-slate-400">{searchedOrder.deliveryAddress || 'Address not available'}</p>
             </div>
             <div>
               <span className="text-slate-400 block">Package Inclusions:</span>
               <ul className="text-slate-300 space-y-1 mt-0.5">
-                {searchedOrder.items.map((it) => (
-                  <li key={it.id}>
-                    • {it.quantity}x {it.product.name}
-                  </li>
-                ))}
+                {searchedOrder.items.length > 0
+                  ? searchedOrder.items.map((item, index) => <li key={`${item}-${index}`}>• {item}</li>)
+                  : <li>Order items are not available.</li>}
               </ul>
             </div>
           </div>
         </div>
-      ) : hasSearched ? (
+      ) : hasSearched && !loading && !errorMsg ? (
         <div className="py-16 text-center bg-slate-900/40 rounded-3xl border border-slate-800 p-8 space-y-3">
           <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
           <h3 className="font-heading font-bold text-xl text-white">Order not found</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            We couldn't locate an order with reference "{inputOrderNumber}". Try checking your confirmation email or enter default order <strong className="text-white font-mono-num">BH36-84920</strong>.
+            We couldn't find a shippable order with that reference. Check the order ID or tracking number and make sure you are signed in with the email used for the order.
           </p>
         </div>
       ) : null}
