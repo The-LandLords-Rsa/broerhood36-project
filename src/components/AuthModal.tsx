@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { CONFIG, supabase } from '../lib/supabase';
+import { CONFIG, getAuthRedirectUrl, supabase } from '../lib/supabase';
 import { isValidEmail, isValidName, isValidSouthAfricanPhone } from '../lib/formValidation';
 import { isOwnerEmail } from '../lib/ownerAccess';
 import { X, Lock, Mail, ShieldCheck, LogOut, CheckCircle2 } from 'lucide-react';
 
 const getAuthErrorMessage = (error: unknown, action: string): string => {
+  if (error instanceof Error && /email not confirmed|email_not_confirmed/i.test(
+    `${error.message} ${'code' in error ? error.code : ''}`
+  )) {
+    return 'Please confirm your email first';
+  }
   if (error instanceof Error && /failed to fetch|network request failed|networkerror/i.test(error.message)) {
     return `Could not reach Supabase Auth at ${new URL(CONFIG.SUPABASE_URL).host}. Verify the project URL and that the Supabase project is active, then try again.`;
   }
@@ -22,6 +27,8 @@ interface AuthModalProps {
   setUser: (user: User | null) => void;
   onOwnerLogin: () => void;
   onOpenAdmin: () => void;
+  onAuthSuccess: () => void;
+  initialError?: string | null;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -30,7 +37,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   user,
   setUser,
   onOwnerLogin,
-  onOpenAdmin
+  onOpenAdmin,
+  onAuthSuccess,
+  initialError
 }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -44,10 +53,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setErrorMsg('');
+      setErrorMsg(initialError ?? '');
       setSuccessMsg('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialError]);
 
   if (!isOpen) return null;
 
@@ -75,8 +84,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         throw error;
       }
 
-      setUser(data.user);
-      if (isOwnerEmail(data.user.email)) {
+      console.log('session', data.session);
+      if (!data.session) {
+        setErrorMsg('Please confirm your email first');
+        return;
+      }
+
+      setUser(data.session.user);
+      if (isOwnerEmail(data.session.user.email)) {
         setSuccessMsg('Admin login verified. Opening the admin dashboard.');
         setTimeout(() => {
           onClose();
@@ -87,6 +102,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setSuccessMsg('Logged in successfully!');
       setTimeout(() => {
         onClose();
+        onAuthSuccess();
       }, 1000);
     } catch (err: unknown) {
       setErrorMsg(getAuthErrorMessage(err, 'Login'));
@@ -131,7 +147,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         email: normalizedEmail,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: getAuthRedirectUrl(),
           data: {
             full_name: fullName.trim(),
             phone: phone.trim()
@@ -145,12 +161,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       if (data.session && data.user) {
         setUser(data.user);
-        setSuccessMsg('Account created successfully!');
+        setSuccessMsg('Check your email! Confirmation link is valid for 1 hour and can only be used once.');
         setTimeout(() => {
           onClose();
+          onAuthSuccess();
         }, 1200);
       } else {
-        setSuccessMsg('Please check your email inbox to confirm your account.');
+        setSuccessMsg('Check your email! Confirmation link is valid for 1 hour and can only be used once.');
       }
     } catch (err: unknown) {
       setErrorMsg(getAuthErrorMessage(err, 'Registration'));

@@ -35,11 +35,11 @@ Visit [http://localhost:3000](http://localhost:3000) or the port displayed in yo
     - **Line 1 (Sales & Kicks)**: `+27 64 901 3150`
     - **Line 2 (Rentals & Dispatch)**: `+27 69 978 1083`
   - Central Email Routing: `broer.hood.36@gmail.com`
-  - PayFast Gateway, Ozow Instant EFT, Direct EFT, and Cash on Delivery (COD)
+  - PayFast sandbox checkout (test mode only; live payments are not configured)
 - **Key Modules**:
   - Shopping Bag / Cart with promo codes & threshold tracking
-  - 1-Click "I HAVE PAID - NOTIFY BOTH NUMBERS" payment verification
+  - Server-verified PayFast payment notifications before orders are marked paid
   - German Hubbly Rental Booking Engine with date picker & add-ons
-  - Live Courier Tracking System (The Courier Guy & Paxi)
+  - Order status and courier tracking details stored in Supabase
   - Dedicated Multi-Channel Enquiry Portal
   - Admin Management Console with live order synchronization

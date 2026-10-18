@@ -46,7 +46,7 @@ export const ContactPage: React.FC = () => {
     },
     {
       q: 'What payment methods do you support?',
-      a: 'Secure online checkout is temporarily unavailable while our payment processing is configured. We do not accept cash on delivery or manual bank transfers.'
+      a: 'PayFast is being configured in sandbox mode for testing only. No real payments can be made, and other payment methods are not currently available.'
     }
   ];
 

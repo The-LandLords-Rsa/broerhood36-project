@@ -3,3 +3,12 @@ verify_jwt = false
 
 [functions.order-paid-whatsapp]
 verify_jwt = false
+
+[functions.sync-storefront-catalog]
+verify_jwt = true
+
+[functions.payfast-create-payment]
+verify_jwt = true
+
+[functions.payfast-itn]
+verify_jwt = false

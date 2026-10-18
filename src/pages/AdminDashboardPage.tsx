@@ -36,6 +36,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [loadError, setLoadError] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
+  const [syncingPaymentCatalog, setSyncingPaymentCatalog] = useState(false);
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, {
     courierName: string;
     trackingNumber: string;
@@ -255,6 +256,38 @@ export const AdminDashboardPage: React.FC = () => {
     setTimeout(() => setCopiedSql(false), 2000);
   };
 
+  const syncPaymentCatalog = async () => {
+    setSyncingPaymentCatalog(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<{ synced: number }>(
+        'sync-storefront-catalog',
+        {
+          body: {
+            products: PRODUCTS.map((product) => ({
+              sku: product.id,
+              name: product.name,
+              category: product.category,
+              price: product.price,
+              is_available: product.inStock
+            }))
+          }
+        }
+      );
+      if (error) throw error;
+      if (!data || typeof data.synced !== 'number') {
+        throw new Error('The catalog sync returned an invalid response.');
+      }
+      showNotification(`Payment catalog synced: ${data.synced} products.`);
+    } catch (error) {
+      console.error('Unable to sync the trusted payment catalog:', error);
+      showNotification(error instanceof Error
+        ? `Payment catalog sync failed: ${error.message}`
+        : 'Payment catalog sync failed. Check the database and Edge Function deployment.');
+    } finally {
+      setSyncingPaymentCatalog(false);
+    }
+  };
+
   const totalRevenue = dbOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
 
   if (!isOwnerEmail(authUser?.email)) {
@@ -435,7 +468,7 @@ export const AdminDashboardPage: React.FC = () => {
               </p>
             </div>
             <span className="text-[11px] text-blue-400 bg-blue-950/60 border border-blue-500/30 px-3 py-1 rounded-full font-semibold">
-              PayFast &amp; COD Active
+              PayFast sandbox · setup required
             </span>
           </div>
 
@@ -839,17 +872,27 @@ export const AdminDashboardPage: React.FC = () => {
                 <span>Supabase &amp; PayFast Configuration</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Your credentials are configured in <code className="text-emerald-400 bg-slate-950 px-1.5 py-0.5 rounded font-mono">src/lib/supabase.ts</code>.
+                PayFast credentials stay in Supabase Edge Function Secrets; storefront prices are synced to a server-only catalog.
               </p>
             </div>
 
-            <button
-              onClick={copySql}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition"
-            >
-              {copiedSql ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
-              <span>{copiedSql ? 'SQL Script Copied!' : 'Copy Supabase SQL'}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={syncPaymentCatalog}
+                disabled={syncingPaymentCatalog}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncingPaymentCatalog ? 'animate-spin' : ''}`} />
+                <span>{syncingPaymentCatalog ? 'Syncing prices...' : 'Sync payment catalog'}</span>
+              </button>
+              <button
+                onClick={copySql}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition"
+              >
+                {copiedSql ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedSql ? 'SQL Script Copied!' : 'Copy Supabase SQL'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -859,10 +902,8 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-slate-400 font-semibold">PayFast Merchant ID:</span>
-              <p className="font-mono text-blue-400">
-                {CONFIG.PAYFAST_MERCHANT_ID} (Test Sandbox: 10000100)
-              </p>
+              <span className="text-slate-400 font-semibold">Payment mode:</span>
+              <p className="font-mono text-amber-300">PayFast sandbox (server-side secrets)</p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">

@@ -10,15 +10,31 @@ export const CONFIG = {
   // Official Store Email
   STORE_EMAIL: 'broer.hood.36@gmail.com',
 
-  // PayFast merchant settings must be configured in server-side Supabase secrets.
-  PAYFAST_MERCHANT_ID: '10000100',
   STORE_NAME: 'BROERHOOD36',
   CURRENCY: 'R'
 };
 
 import { createClient } from '@supabase/supabase-js';
 
-export const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const VERCEL_SITE_URL = 'https://broer-hood-36-org.vercel.app';
+
+export const getAuthRedirectUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return VERCEL_SITE_URL;
+  }
+
+  return window.location.origin;
+};
+
+export const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: window.localStorage
+  }
+});
 
 if (typeof window !== 'undefined') {
   (window as any).supabase = supabase;

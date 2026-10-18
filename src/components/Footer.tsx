@@ -212,7 +212,7 @@ export const Footer: React.FC = () => {
         <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-slate-400">
-              Secure online checkout is temporarily unavailable while payment processing is configured.
+              PayFast sandbox checkout is being configured. Test payments only; live payments are not available.
             </span>
           </div>
 

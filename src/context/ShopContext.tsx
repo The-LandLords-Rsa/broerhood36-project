@@ -85,7 +85,8 @@ import { supabase } from '../lib/supabase';
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState<string>(() => {
-    return window.location.hash === '#admin' ? 'admin' : 'home';
+    const requestedPage = window.location.hash.slice(1);
+    return ['admin', 'tracking', 'checkout'].includes(requestedPage) ? requestedPage : 'home';
   });
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -149,8 +150,26 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) setAuthUser(session?.user ?? null);
+    const persistAuthUser = (user: User | null) => {
+      if (!isMounted) return;
+
+      setAuthUser(user);
+      try {
+        if (user) {
+          localStorage.setItem('broerhood36_user', JSON.stringify(user));
+        } else {
+          localStorage.removeItem('broerhood36_user');
+        }
+      } catch (error) {
+        console.error('Unable to persist the Supabase user profile:', error);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      persistAuthUser(session?.user ?? null);
+      if (event === 'SIGNED_IN' && session) {
+        window.history.replaceState(null, '', '/');
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -158,15 +177,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Unable to restore the Supabase session:', error.message);
         return;
       }
-      if (isMounted) setAuthUser(session?.user ?? null);
+      persistAuthUser(session?.user ?? null);
     }).catch((error: unknown) => {
       console.error('Unable to restore the Supabase session:', error);
     });
 
-    // Listen for #admin route hash changes
+    // Restore routes used by payment-provider return and cancellation URLs.
     const handleHash = () => {
-      if (window.location.hash === '#admin') {
-        setActivePage('admin');
+      const requestedPage = window.location.hash.slice(1);
+      if (['admin', 'tracking', 'checkout'].includes(requestedPage)) {
+        setActivePage(requestedPage);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };

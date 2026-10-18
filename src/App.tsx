@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShopProvider, useShop } from './context/ShopContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -39,6 +39,20 @@ const AppContent: React.FC = () => {
     authUser,
     setAuthUser
   } = useShop();
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!window.location.hash.includes('error=access_denied')) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const errorDescription = params.get('error_description');
+    console.error('Auth error:', errorDescription);
+    window.history.replaceState(null, '', window.location.pathname);
+    setAuthError('This confirmation link expired or was already used. Please sign up again to get a new link.');
+    setIsAuthModalOpen(true);
+  }, [setIsAuthModalOpen]);
 
   const isOwner = isOwnerEmail(authUser?.email);
 
@@ -91,11 +105,19 @@ const AppContent: React.FC = () => {
       <GlobalSearchModal />
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthError(null);
+        }}
         user={authUser}
         setUser={setAuthUser}
         onOwnerLogin={() => navigateTo('admin')}
         onOpenAdmin={() => navigateTo('admin')}
+        initialError={authError}
+        onAuthSuccess={() => {
+          window.history.replaceState(null, '', '/');
+          navigateTo('home');
+        }}
       />
       {/* Download ZIP modal - ONLY for owner */}
       {isOwner && <ProjectDownloadModal />}

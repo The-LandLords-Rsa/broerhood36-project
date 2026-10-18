@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { isValidEmail, isValidName, isValidSouthAfricanPhone } from '../lib/formValidation';
+import { supabase } from '../lib/supabase';
 import {
   ArrowRight,
   ArrowLeft,
@@ -11,7 +12,10 @@ export const CheckoutPage: React.FC = () => {
   const {
     cart,
     cartTotal,
-    navigateTo
+    navigateTo,
+    authUser,
+    setIsAuthModalOpen,
+    promoCode
   } = useShop();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -27,6 +31,12 @@ export const CheckoutPage: React.FC = () => {
   const [province, setProvince] = useState('Gauteng');
   const [postalCode, setPostalCode] = useState('');
   const [notes, setNotes] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const [startingPayment, setStartingPayment] = useState(false);
+
+  useEffect(() => {
+    if (authUser?.email) setEmail(authUser.email);
+  }, [authUser?.email]);
 
   const saProvinces = [
     'Gauteng',
@@ -64,6 +74,95 @@ export const CheckoutPage: React.FC = () => {
     return true;
   };
 
+  const startPayFastCheckout = async () => {
+    setPaymentError('');
+    if (!authUser?.email) {
+      setPaymentError('Sign in with a confirmed account before paying so your order can be securely linked to you.');
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (email.trim().toLowerCase() !== authUser.email.toLowerCase()) {
+      setPaymentError('The order email must match the email address on your signed-in account.');
+      return;
+    }
+    if (!validateCustomerDetails() || !validateDeliveryAddress()) return;
+
+    setStartingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<{
+        action: string;
+        parameters: Record<string, string>;
+        total: number;
+        error?: string;
+      }>('payfast-create-payment', {
+        body: {
+          customer: { fullName, email: authUser.email, phone },
+          address: {
+            street,
+            city,
+            province,
+            postalCode,
+            deliveryNotes: notes
+          },
+          items: cart.map((item) => ({
+            sku: item.product.id,
+            quantity: item.quantity,
+            selected_size: item.selectedSize,
+            selected_color: item.selectedColor,
+            selected_storage: item.selectedStorage
+          })),
+          promoCode
+        }
+      });
+
+      if (error) {
+        if (error.context instanceof Response) {
+          const body: unknown = await error.context.clone().json().catch(() => null);
+          if (
+            typeof body === 'object' &&
+            body !== null &&
+            'error' in body &&
+            typeof body.error === 'string'
+          ) {
+            throw new Error(body.error);
+          }
+        }
+        throw error;
+      }
+      if (data?.error) throw new Error(data.error);
+      if (
+        data?.action !== 'https://sandbox.payfast.co.za/eng/process' ||
+        !data.parameters ||
+        Object.values(data.parameters).some((value) => typeof value !== 'string') ||
+        typeof data.total !== 'number' ||
+        !Number.isFinite(data.total) ||
+        Math.round(data.total * 100) !== Math.round(cartTotal * 100)
+      ) {
+        throw new Error('The verified server total does not match your cart. No payment was started; refresh the page and try again.');
+      }
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.action;
+      form.style.display = 'none';
+      Object.entries(data.parameters).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      console.error('Unable to start PayFast sandbox checkout:', error);
+      setPaymentError(error instanceof Error
+        ? error.message
+        : 'Secure checkout could not be started. Please try again.');
+      setStartingPayment(false);
+    }
+  };
+
   if (cart.length === 0) {
     return (
       <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4">
@@ -81,8 +180,15 @@ export const CheckoutPage: React.FC = () => {
     );
   }
 
+  const paymentCancelled = new URLSearchParams(window.location.search).get('payfast') === 'cancelled';
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-10">
+      {paymentCancelled && (
+        <div role="status" className="max-w-2xl mx-auto p-4 rounded-xl border border-amber-500/40 bg-amber-950/40 text-sm text-amber-200">
+          Payment was cancelled in PayFast. The order remains unpaid; you can retry securely below.
+        </div>
+      )}
       {/* Checkout Progress Stepper */}
       <div className="border-b border-slate-800 pb-6">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -150,6 +256,7 @@ export const CheckoutPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  readOnly={Boolean(authUser?.email)}
                   placeholder="sipho@example.co.za"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                 />
@@ -307,27 +414,28 @@ export const CheckoutPage: React.FC = () => {
               SECURE ONLINE CHECKOUT
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Cash on delivery and manual bank transfers are not accepted. Online payment is temporarily unavailable until secure payment processing is configured.
+              PayFast is currently in sandbox mode. Test payments do not move real money. Sign in using the same email address entered above.
             </p>
           </div>
 
           <div className="space-y-3">
             {/* PayFast */}
-            <label className="p-4 rounded-2xl border border-slate-800 bg-slate-950 opacity-50 cursor-not-allowed flex items-center justify-between">
+            <label className="p-4 rounded-2xl border border-blue-500/40 bg-slate-950 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <input
                   type="radio"
                   name="payment"
-                  disabled
+                  checked
+                  readOnly
                   className="accent-blue-500"
                 />
                 <div>
-                  <strong className="text-sm text-white block">PayFast Gateway</strong>
-                  <span className="text-xs text-slate-400">Unavailable until secure server-side payment processing is configured.</span>
+                  <strong className="text-sm text-white block">PayFast Sandbox</strong>
+                  <span className="text-xs text-slate-400">Test checkout · no real charge</span>
                 </div>
               </div>
-              <span className="text-xs font-bold text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-800">
-                Most Popular
+              <span className="text-xs font-bold text-amber-300 bg-amber-950 px-2 py-0.5 rounded border border-amber-800">
+                TEST MODE
               </span>
             </label>
 
@@ -377,9 +485,15 @@ export const CheckoutPage: React.FC = () => {
               </strong>
             </div>
             <span className="text-xs text-amber-300 font-semibold flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5" /> Secure payment is not available yet
+              <Lock className="w-3.5 h-3.5" /> Final amount is recalculated by the server
             </span>
           </div>
+
+          {paymentError && (
+            <div role="alert" className="p-3 rounded-xl bg-rose-950/70 border border-rose-500/40 text-rose-300 text-xs">
+              {paymentError}
+            </div>
+          )}
 
           <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
             <button
@@ -391,11 +505,12 @@ export const CheckoutPage: React.FC = () => {
 
             <button
               type="button"
-              disabled
-              className="px-5 py-3.5 rounded-xl font-heading font-bold text-xs bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed flex items-center justify-center gap-1.5 order-1 sm:order-2"
+              onClick={startPayFastCheckout}
+              disabled={startingPayment}
+              className="px-5 py-3.5 rounded-xl font-heading font-bold text-xs bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white border border-blue-500 disabled:border-slate-700 flex items-center justify-center gap-1.5 order-1 sm:order-2"
             >
               <Lock className="w-4 h-4" />
-              <span>ONLINE CHECKOUT UNAVAILABLE</span>
+              <span>{startingPayment ? 'STARTING SECURE CHECKOUT...' : 'PAY SECURELY WITH PAYFAST'}</span>
             </button>
           </div>
         </div>

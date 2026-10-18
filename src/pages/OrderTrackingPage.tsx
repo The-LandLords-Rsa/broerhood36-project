@@ -88,23 +88,11 @@ export const OrderTrackingPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedWaybill, setCopiedWaybill] = useState(false);
+  const paymentReturned = new URLSearchParams(window.location.search).get('payfast') === 'returned';
 
-  const trackingSteps: { status: OrderStatus; label: string; desc: string }[] = [
-    { status: 'placed', label: 'Order Placed', desc: 'Received in Broerhood36 system' },
-    { status: 'payment_confirmed', label: 'Payment Confirmed', desc: 'Payment independently verified' },
-    { status: 'processing', label: 'Processing', desc: 'Packed & inspected at JHB Depot' },
-    { status: 'dispatched', label: 'Dispatched', desc: 'Handed over to The Courier Guy' },
-    { status: 'out_for_delivery', label: 'Out for Delivery', desc: 'With local driver on vehicle' },
-    { status: 'delivered', label: 'Delivered', desc: 'Signed for at doorstep' }
-  ];
-
-  const getStepIndex = (status: OrderStatus) => {
-    return trackingSteps.findIndex((s) => s.status === status);
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = inputOrderNumber.trim().replace(/^#/, '');
+  const searchOrder = async (reference: string) => {
+    const clean = reference.trim().replace(/^#/, '');
+    setInputOrderNumber(reference);
     setErrorMsg('');
     setSearchedOrder(null);
     setHasSearched(true);
@@ -137,6 +125,29 @@ export const OrderTrackingPage: React.FC = () => {
     }
   };
 
+  React.useEffect(() => {
+    const orderId = new URLSearchParams(window.location.search).get('order_id');
+    if (paymentReturned && authUser && orderId) void searchOrder(orderId);
+  }, [authUser]);
+
+  const trackingSteps: { status: OrderStatus; label: string; desc: string }[] = [
+    { status: 'placed', label: 'Order Placed', desc: 'Received in Broerhood36 system' },
+    { status: 'payment_confirmed', label: 'Payment Confirmed', desc: 'Payment independently verified' },
+    { status: 'processing', label: 'Processing', desc: 'Packed & inspected at JHB Depot' },
+    { status: 'dispatched', label: 'Dispatched', desc: 'Handed over to The Courier Guy' },
+    { status: 'out_for_delivery', label: 'Out for Delivery', desc: 'With local driver on vehicle' },
+    { status: 'delivered', label: 'Delivered', desc: 'Signed for at doorstep' }
+  ];
+
+  const getStepIndex = (status: OrderStatus) => {
+    return trackingSteps.findIndex((s) => s.status === status);
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await searchOrder(inputOrderNumber);
+  };
+
   const currentStepIndex = searchedOrder ? Math.max(getStepIndex(searchedOrder.status), 0) : 0;
 
   const copyWaybill = (val: string) => {
@@ -158,6 +169,11 @@ export const OrderTrackingPage: React.FC = () => {
         <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
           Sign in with the email used for your order, then enter its order ID or courier tracking number.
         </p>
+        {paymentReturned && (
+          <p role="status" className="text-xs text-amber-200 bg-amber-950/40 border border-amber-500/30 rounded-xl p-3">
+            PayFast has returned you to the store. Payment is shown as confirmed only after its server notification is verified.
+          </p>
+        )}
 
         {/* Search Input */}
         <form onSubmit={handleSearch} className="pt-2 flex items-center gap-2 max-w-md mx-auto">
@@ -199,6 +215,11 @@ export const OrderTrackingPage: React.FC = () => {
       {/* Tracking Result View */}
       {hasSearched && searchedOrder ? (
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-10">
+          {searchedOrder.status === 'pending' && (
+            <p role="status" className="text-xs text-amber-200 bg-amber-950/40 border border-amber-500/30 rounded-xl p-3">
+              Awaiting PayFast payment verification. This order is not marked paid until PayFast's server notification is verified.
+            </p>
+          )}
           {/* Header metadata row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800 text-xs">
             <div>
