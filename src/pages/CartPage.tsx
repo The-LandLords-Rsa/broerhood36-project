@@ -61,7 +61,7 @@ export const CartPage: React.FC = () => {
         </div>
         <h2 className="font-heading font-black text-3xl text-white">YOUR SHOPPING BAG IS EMPTY</h2>
         <p className="text-slate-400 text-xs max-w-sm mx-auto">
-          Explore our streetwear kicks, flagship smartphones, football jerseys, and German hubblies.
+          Explore our streetwear kicks, flagship smartphones, football jerseys, and phone accessories.
         </p>
         <button
           onClick={() => navigateTo('shop')}

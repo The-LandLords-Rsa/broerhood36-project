@@ -34,7 +34,7 @@ export const SneakersPage: React.FC = () => {
         <div className="max-w-2xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-rose-500/30 text-rose-400 text-xs font-bold">
             <Flame className="w-3.5 h-3.5 fill-current" />
-            <span>AUTHENTIC STREETWEAR FOOTWEAR</span>
+            <span> STREETWEAR FOOTWEAR</span>
           </div>
           <h1 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight">
             STEP INTO SOMETHING DIFFERENT

@@ -4,7 +4,7 @@ export const CONFIG = {
   
   // Both Official Broerhood36 WhatsApp Lines
   WHATSAPP_1: '27649013150', // Line 1: +27 64 901 3150 (Primary Sales & Customer Care)
-  WHATSAPP_2: '27699781083', // Line 2: +27 69 978 1083 (Dispatch & Hubbly Rentals)
+  WHATSAPP_2: '27699781083', // Line 2: +27 69 978 1083 (Dispatch)
   OWNER_WHATSAPP: '27649013150', // Default Line
   
   // Official Store Email

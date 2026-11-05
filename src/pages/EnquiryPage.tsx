@@ -172,12 +172,12 @@ export const EnquiryPage: React.FC = () => {
               +{CONFIG.WHATSAPP_2}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Direct line for German Hubbly event bookings, delivery logistics, and urgent requests.
+              Direct line for delivery logistics and urgent customer requests.
             </p>
           </div>
           <a
             href={`https://wa.me/${CONFIG.WHATSAPP_2}?text=${encodeURIComponent(
-              'Hello BROERHOOD36 (Line 2), I have an enquiry regarding German Hubbly rentals and dispatch.'
+              'Hello BROERHOOD36 (Line 2), I have an enquiry regarding delivery dispatch.'
             )}`}
             target="_blank"
             rel="noreferrer"
@@ -397,10 +397,6 @@ export const EnquiryPage: React.FC = () => {
                   <option value="Smartphones & Mobile Tech">Smartphones &amp; Mobile Tech</option>
                   <option value="Phone Accessories & Chargers">Phone Accessories &amp; Chargers</option>
                   <option value="Football Shirts & Team Kits">Football Shirts &amp; Team Kits</option>
-                  <option value="German Hubbly Purchase">German Hubbly Purchase</option>
-                  <option value="German Hubbly Event Rental Hire">German Hubbly Event Rental Hire</option>
-                  <option value="Shisha Materials & Coconut Coals">Shisha Materials &amp; Coconut Coals</option>
-                  <option value="Vapes & Pods (18+)">Vapes &amp; Pods (18+)</option>
                   <option value="Bulk Order / Wholesale Inquiry">Bulk Order / Wholesale Inquiry</option>
                   <option value="Partnership / Sponsorship">Partnership / Sponsorship</option>
                 </select>

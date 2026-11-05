@@ -40,7 +40,7 @@ export const ProductDetailModal: React.FC = () => {
   const [selectedStorage, setSelectedStorage] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [isAdded, setIsAdded] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'rental'>('desc');
+  const [activeTab, setActiveTab] = useState<'desc' | 'specs'>('desc');
 
   useEffect(() => {
     if (selectedProduct) {
@@ -104,11 +104,6 @@ export const ProductDetailModal: React.FC = () => {
     });
     closeProductModal();
     navigateTo('checkout');
-  };
-
-  const handleRentalBook = () => {
-    closeProductModal();
-    navigateTo('rentals', { productId: selectedProduct.id });
   };
 
   return (
@@ -276,14 +271,6 @@ export const ProductDetailModal: React.FC = () => {
                   </span>
                 </div>
 
-                {selectedProduct.rentalDetails && (
-                  <button
-                    onClick={handleRentalBook}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-colors"
-                  >
-                    Rent from R{selectedProduct.rentalDetails.dailyRate}/day
-                  </button>
-                )}
               </div>
 
               {/* Selectors: Storage (for Phones) */}
@@ -431,18 +418,6 @@ export const ProductDetailModal: React.FC = () => {
                 >
                   Technical Specifications
                 </button>
-                {selectedProduct.rentalDetails && (
-                  <button
-                    onClick={() => setActiveTab('rental')}
-                    className={`pb-1 transition-colors ${
-                      activeTab === 'rental'
-                        ? 'text-emerald-400 border-b-2 border-emerald-500 font-bold'
-                        : 'text-slate-400 hover:text-emerald-300'
-                    }`}
-                  >
-                    Rental Package Details
-                  </button>
-                )}
               </div>
 
               <div className="mt-4 text-xs text-slate-300 leading-relaxed max-h-48 overflow-y-auto pr-2">
@@ -459,36 +434,6 @@ export const ProductDetailModal: React.FC = () => {
                   </div>
                 )}
 
-                {activeTab === 'rental' && selectedProduct.rentalDetails && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-900/40">
-                      <span>Daily Rental Rate:</span>
-                      <strong className="text-emerald-400 font-mono-num text-sm">
-                        R {selectedProduct.rentalDetails.dailyRate} / day
-                      </strong>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-400">
-                      <span>Security Refundable Deposit:</span>
-                      <strong className="text-white font-mono-num">
-                        R {selectedProduct.rentalDetails.deposit}
-                      </strong>
-                    </div>
-                    <div>
-                      <strong className="block text-slate-200 mb-1">What's Included in Rental:</strong>
-                      <ul className="list-disc pl-4 space-y-1 text-slate-400">
-                        {selectedProduct.rentalDetails.whatsIncluded.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <button
-                      onClick={handleRentalBook}
-                      className="w-full mt-2 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
-                    >
-                      Open Rental Booking Calendar
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 

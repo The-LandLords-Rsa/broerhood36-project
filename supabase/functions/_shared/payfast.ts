@@ -1,5 +1,13 @@
 import { createHash } from 'node:crypto';
 
+export const getPayFastBaseUrl = (): string => {
+  const mode = Deno.env.get('PAYFAST_MODE')?.trim().toLowerCase() || 'sandbox';
+  if (mode !== 'sandbox' && mode !== 'live') {
+    throw new Error('PAYFAST_MODE must be either sandbox or live.');
+  }
+  return mode === 'live' ? 'https://www.payfast.co.za' : 'https://sandbox.payfast.co.za';
+};
+
 const encodePayFastValue = (value: string): string =>
   encodeURIComponent(value.trim()).replace(/%20/g, '+');
 

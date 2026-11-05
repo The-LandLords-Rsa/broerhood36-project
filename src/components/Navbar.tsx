@@ -42,9 +42,6 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
     { id: 'phones', label: 'Phones' },
     { id: 'accessories', label: 'Accessories' },
     { id: 'football', label: 'Football' },
-    { id: 'hubblies', label: 'Hubblies' },
-    { id: 'vapes', label: 'Vapes' },
-    { id: 'rentals', label: 'Rentals' },
     { id: 'enquiry', label: 'Enquiries' },
     { id: 'about', label: 'About' },
     { id: 'contact', label: 'Contact' }
@@ -64,12 +61,12 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
   };
 
   return (
-    <div className="w-full max-w-[100vw] overflow-x-hidden">
+    <div className="w-full max-w-[100vw] overflow-x-clip">
       {/* Top slim announcement bar - MOBILE STACKED */}
       <div className="w-full bg-gradient-to-r from-blue-950 via-slate-900 to-rose-950 text-slate-200 border-b border-slate-800/80 font-medium overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-1.5 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-2 text-[10px] sm:text-xs">
           <div className="flex items-center gap-2 text-center sm:text-left">
-            <span className="text-rose-400 font-bold tracking-wide">FREE DELIVERY OVER R1,500</span>
+            <span className="text-rose-400 font-bold tracking-wide">FREE DELIVERY OVER R3000</span>
             <span className="hidden sm:inline text-slate-500">·</span>
             <span className="hidden sm:inline text-slate-300">Code: <strong className="text-white bg-blue-600/30 px-1 py-0.5 rounded border border-blue-500/40">BROERHOOD10</strong></span>
           </div>
@@ -97,7 +94,7 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
         </div>
       )}
 
-      <header className="sticky top-0 z-40 w-full max-w-[100vw] bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 overflow-x-hidden">
+      <header className="sticky top-0 z-40 w-full max-w-[100vw] bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 overflow-x-clip">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-[64px] sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
           <button onClick={() => handleNavClick('home')} className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-blue-600 to-rose-600 flex items-center justify-center font-black text-white text-sm sm:text-lg">B36</div>
@@ -107,12 +104,12 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
             </div>
           </button>
 
-          <nav className="hidden xl:flex items-center gap-1">
+          <nav className="hidden 2xl:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = activePage === link.id;
               return (
-                <button key={link.id} onClick={() => handleNavClick(link.id)} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap ${isActive? 'text-white bg-blue-600/20 border border-blue-500/50' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'}`}>
-                  {link.label}{link.id === 'vapes' && <span className="ml-1 text-[8px] text-rose-400 border border-rose-500/30 rounded px-1">18+</span>}
+                  <button key={link.id} onClick={() => handleNavClick(link.id)} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap ${isActive? 'text-white bg-blue-600/20 border border-blue-500/50' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'}`}>
+                    {link.label}
                 </button>
               );
             })}
@@ -134,7 +131,7 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation"
-              className="xl:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 ml-1"
+              className="2xl:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 ml-1"
             >
               {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
@@ -142,7 +139,7 @@ export const Navbar: React.FC<{ onOpenWishlist?: () => void }> = ({ onOpenWishli
         </div>
 
         {mobileMenuOpen && (
-          <div id="mobile-navigation" className="xl:hidden w-full max-w-[100vw] bg-slate-950 border-t border-slate-800 px-3 py-4 max-h-[85vh] overflow-y-auto overflow-x-hidden">
+          <div id="mobile-navigation" className="2xl:hidden w-full max-w-[100vw] bg-slate-950 border-t border-slate-800 px-3 py-4 max-h-[85vh] overflow-y-auto overflow-x-hidden">
             <div className="grid grid-cols-2 gap-2 mb-4">
               {navLinks.map((link) => {
                 const isActive = activePage === link.id;

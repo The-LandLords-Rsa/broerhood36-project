@@ -1,24 +1,21 @@
 import { Product } from '../types';
 
-import heroImg from '../assets/images/hero_broerhood36_lifestyle_1790875651389.jpg';
 import sneakerImg from '../assets/images/category_sneakers_dunk_1790875662666.jpg';
 import phoneImg from '../assets/images/category_flagship_phones_1790875674855.jpg';
 import jerseyImg from '../assets/images/category_football_jerseys_1790875686114.jpg';
-import hubblyImg from '../assets/images/category_german_hubbly_1790875698080.jpg';
-import shishaAccImg from '../assets/images/category_shisha_accs_1790875712020.jpg';
 import vapeImg from '../assets/images/category_vapes_modern_1790875724437.jpg';
 
 export const CATEGORY_HERO_IMAGES = {
-  hero: heroImg,
+  hero: sneakerImg,
   sneakers: sneakerImg,
   phones: phoneImg,
   football: jerseyImg,
-  hubblies: hubblyImg,
-  'shisha-accessories': shishaAccImg,
   vapes: vapeImg,
   accessories: phoneImg,
-  rentals: hubblyImg,
 };
+
+// Keep removed/hidden categories blocked for items restored from older carts.
+export const HIDDEN_STORE_CATEGORIES = new Set(['hubblies', 'shisha-accessories', 'rentals', 'vapes']);
 
 export const PRODUCTS: Product[] = [
   // ================= SNEAKERS - 4 VARIANTS PER MODEL =================
@@ -1297,79 +1294,6 @@ export const PRODUCTS: Product[] = [
     sizes: ['S','M','L','XL']
   },
 
-  // ================= GERMAN HUBBLIES =================
-  {
-    id: 'hub-01',
-    name: 'Steamulation Pro X III German Stainless Hubbly',
-    brand: 'Steamulation Germany',
-    category: 'hubblies',
-    subcategory: 'German Hubblies',
-    price: 7499,
-    originalPrice: 8499,
-    discountPercent: 12,
-    rating: 5.0,
-    reviewCount: 37,
-    image: hubblyImg,
-    views: { front: hubblyImg, side: hubblyImg, top: hubblyImg, back: hubblyImg },
-    inStock: true,
-    isFeatured: true,
-    isTrending: true,
-    description: 'V2A stainless German hubbly.',
-    specifications: { 'Material': 'V2A Stainless Steel' },
-    rentalDetails: { dailyRate: 450, deposit: 1500, durationOptions: ['1 Day','Weekend','Week'], whatsIncluded: ['Full Hubbly','Hose','HMD','Coals','Burner'] },
-    colors: ['Polished Stainless Steel']
-  },
-  {
-    id: 'hub-02',
-    name: 'Moze Varity Lounge Steel German Hubbly',
-    brand: 'Moze Germany',
-    category: 'hubblies',
-    subcategory: 'German Hubblies',
-    price: 5499,
-    rating: 4.9,
-    reviewCount: 29,
-    image: hubblyImg,
-    views: { front: hubblyImg, side: hubblyImg, top: hubblyImg, back: hubblyImg },
-    inStock: true,
-    description: 'Moze German hubbly.',
-    specifications: { 'Country': 'Germany' },
-    rentalDetails: { dailyRate: 380, deposit: 1200, durationOptions: ['1 Day','Weekend'], whatsIncluded: ['Hubbly','Hose','HMD','Burner'] },
-    colors: ['Wavy Navy Blue']
-  },
-
-  // ================= SHISHA ACCESSORIES =================
-  {
-    id: 'sh-01',
-    name: 'CocoUrth Premium Organic Coconut Shisha Charcoal 1kg',
-    brand: 'CocoUrth',
-    category: 'shisha-accessories',
-    subcategory: 'Coal',
-    price: 180,
-    rating: 4.9,
-    reviewCount: 112,
-    image: shishaAccImg,
-    views: { front: shishaAccImg, side: shishaAccImg, top: shishaAccImg, back: shishaAccImg },
-    inStock: true,
-    isTrending: true,
-    description: 'Coconut charcoal.',
-    specifications: { 'Quantity': '72 cubes' }
-  },
-  {
-    id: 'sh-02',
-    name: 'Broerhood 1000W Heavy Duty Rapid Electric Coal Burner Stove',
-    brand: 'Broerhood36',
-    category: 'shisha-accessories',
-    subcategory: 'Stoves',
-    price: 349,
-    rating: 4.8,
-    reviewCount: 89,
-    image: shishaAccImg,
-    views: { front: shishaAccImg, side: shishaAccImg, top: shishaAccImg, back: shishaAccImg },
-    inStock: true,
-    description: '1000W burner.',
-    specifications: { 'Power': '1000W' }
-  },
-
   // ================= VAPES =================
   {
     id: 'vp-01',
@@ -1444,7 +1368,4 @@ export const CATEGORIES_LIST = [
   { id: 'phones', title: 'Smartphones', description: 'iPhone 13-17, Samsung S23-S25.', image: phoneImg, count: '20+ Flagships', route: 'phones' },
   { id: 'accessories', title: 'Phone Accessories', description: 'Covers for iPhone 13-17 + S23-S25 + Chargers.', image: phoneImg, count: '50+ Essentials', route: 'accessories' },
   { id: 'football', title: 'Football Jerseys', description: 'Premier League 7 teams, La Liga 4, Betway 5, Bundesliga 3, Serie A 5, PSG, MLS, Al Nassr, Bafana + 6 International.', image: jerseyImg, count: '80+ Kits', route: 'football' },
-  { id: 'hubblies', title: 'German Hubblies', description: 'V2A stainless steel.', image: hubblyImg, count: 'Buy or Rent', route: 'hubblies' },
-  { id: 'shisha-accessories', title: 'Shisha Accessories', description: 'Coal, stoves, HMDs.', image: shishaAccImg, count: 'All Materials', route: 'shisha-accessories' },
-  { id: 'vapes', title: 'Vapes & Pods', description: 'ElfBar, Nasty, Waka Truff.', image: vapeImg, count: 'Truff + Pods', route: 'vapes' }
 ];

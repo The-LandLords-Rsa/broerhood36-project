@@ -12,6 +12,8 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
 
+const hiddenCategories = new Set(['hubblies', 'shisha-accessories', 'vapes', 'rentals']);
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405);
@@ -55,12 +57,13 @@ Deno.serve(async (request: Request) => {
       ) {
         throw new Error('The submitted catalog contains an invalid product.');
       }
+      const category = product.category.slice(0, 80);
       return {
         sku: product.sku,
         name: product.name.trim().slice(0, 200),
-        category: product.category.slice(0, 80),
+        category,
         price: price.toFixed(2),
-        is_available: product.is_available,
+        is_available: product.is_available && !hiddenCategories.has(category),
         updated_at: new Date().toISOString()
       };
     });

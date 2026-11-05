@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { constantTimeEqual, createPayFastSignature } from '../_shared/payfast.ts';
+import { constantTimeEqual, createPayFastSignature, getPayFastBaseUrl } from '../_shared/payfast.ts';
 
 const requiredEnv = (name: string): string => {
   const value = Deno.env.get(name)?.trim();
@@ -44,7 +44,7 @@ Deno.serve(async (request: Request) => {
       return textResponse('Invalid order reference', 400);
     }
 
-    const validationUrl = 'https://sandbox.payfast.co.za/eng/query/validate';
+    const validationUrl = `${getPayFastBaseUrl()}/eng/query/validate`;
     const validationResponse = await fetch(validationUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

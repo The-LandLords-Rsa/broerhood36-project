@@ -15,17 +15,18 @@ In Supabase **Authentication → URL Configuration**, set the Site URL to a depl
 3. The login form uses Supabase Auth. A valid login for this exact email opens the admin dashboard. Public signup cannot create this admin account.
 4. In Supabase **SQL Editor**, run [`supabase/owner-security.sql`](./supabase/owner-security.sql). Database policies also enforce this one admin identity; the frontend check is not the security boundary.
 
-## 2. PayFast sandbox checkout
+## 2. PayFast checkout
 
 The checkout implementation is sandbox-only. The browser never receives the PayFast passphrase or determines the payable total: `payfast-create-payment` requires a signed-in customer, reads prices from the server-side `store_catalog`, creates a `pending` order, and returns a signed PayFast form. `payfast-itn` checks the signature, asks PayFast to validate the notification, checks merchant/order/amount/status, and only then marks the order `payment_confirmed`. A browser return to the shop is not proof of payment.
 
-To set up sandbox payments:
+Sandbox is the default. To set up sandbox payments:
 
 1. Run [`supabase/owner-security.sql`](./supabase/owner-security.sql) once if it has not already been applied. Apply the payment catalog/order migration with `npx supabase db push` after linking the correct Supabase project.
 2. In **Supabase → Project Settings → Edge Functions → Secrets**, set these names using your **PayFast sandbox** account credentials (not your live credentials):
    - `PAYFAST_MERCHANT_ID`
    - `PAYFAST_MERCHANT_KEY`
    - `PAYFAST_PASSPHRASE` (set the sandbox Salt Passphrase if configured in the sandbox account)
+   - `PAYFAST_MODE`: `sandbox` (or omit it)
    - `APP_URL` (for example, `https://your-storefront.example`; `http://localhost:3000` is allowed for local sandbox testing)
 
    Do not put these values in Vite environment variables, source files, or chat. Supabase supplies the function's Supabase URL and service-role key at runtime; never expose or copy the service-role key to the browser.
@@ -42,7 +43,7 @@ To set up sandbox payments:
 
 If checkout says the secure catalog is not ready, apply the SQL migration and sync the catalog. If the sync/API returns an authorization error, verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` belong to the same active project and the owner policies are installed. Adding merchant secrets alone does not deploy or activate Edge Functions.
 
-This implementation posts only to `https://sandbox.payfast.co.za/eng/process` and validates against the sandbox endpoint. It cannot take live payments. Do not switch to live endpoints or credentials until the sandbox flow and order/notification handling have been reviewed and tested.
+To accept live payments after the sandbox flow and order/notification handling have been reviewed and tested, update the Supabase Edge Function secrets to use the live PayFast merchant ID, merchant key, and passphrase, set `PAYFAST_MODE` to `live`, ensure `APP_URL` is the production HTTPS storefront URL, and redeploy `payfast-create-payment` and `payfast-itn`. The setting selects both the hosted checkout and ITN validation endpoints; the browser is restricted to the official sandbox and live PayFast checkout hosts. Never mix sandbox credentials with live mode or vice versa. Do not use live mode until your PayFast live merchant account is approved and ready to accept payments.
 
 ## 3. Paid-order notification functions
 

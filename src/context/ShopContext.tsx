@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { Product, CartItem, Order, RentalBookingRequest } from '../types';
-import { PRODUCTS } from '../data/products';
+import { Product, CartItem, Order } from '../types';
+import { HIDDEN_STORE_CATEGORIES, PRODUCTS } from '../data/products';
 
 interface ShopContextType {
   activePage: string;
@@ -15,9 +15,6 @@ interface ShopContextType {
       color?: string;
       storage?: string;
       quantity?: number;
-      isRental?: boolean;
-      rentalDays?: number;
-      rentalDate?: string;
     }
   ) => void;
   removeFromCart: (cartItemId: string) => void;
@@ -64,8 +61,6 @@ interface ShopContextType {
   currentOrder: Order | null;
   setCurrentOrder: (order: Order | null) => void;
 
-  rentalBookings: RentalBookingRequest[];
-  addRentalBooking: (booking: RentalBookingRequest) => void;
   isCompareModalOpen: boolean;
   setIsCompareModalOpen: (open: boolean) => void;
 
@@ -91,7 +86,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('broerhood_cart');
-      return saved ? JSON.parse(saved) : [];
+      const restored: unknown = saved ? JSON.parse(saved) : [];
+      if (!Array.isArray(restored)) return [];
+      return restored.filter((item: CartItem) =>
+        item?.product && !HIDDEN_STORE_CATEGORIES.has(item.product.category)
+      );
     } catch {
       return [];
     }
@@ -143,8 +142,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  const [rentalBookings, setRentalBookings] = useState<RentalBookingRequest[]>([]);
-
   const [promoCode, setPromoCode] = useState<string>('');
   const [promoDiscountPercent, setPromoDiscountPercent] = useState<number>(0);
 
@@ -209,6 +206,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Scroll to top on page switch
   const navigateTo = (page: string, params?: { category?: string; productId?: string }) => {
+    if (HIDDEN_STORE_CATEGORIES.has(page)) {
+      setActivePage('shop');
+      return;
+    }
     if (page === 'vapes' && !isAgeVerified) {
       setIsAgeModalOpen(true);
       return;
@@ -230,11 +231,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       color?: string;
       storage?: string;
       quantity?: number;
-      isRental?: boolean;
-      rentalDays?: number;
-      rentalDate?: string;
     }
   ) => {
+    if (HIDDEN_STORE_CATEGORIES.has(product.category)) return;
     const qty = options?.quantity || 1;
     const size = options?.size || product.sizes?.[0];
     const color = options?.color || product.colors?.[0];
@@ -247,8 +246,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           item.product.id === product.id &&
           item.selectedSize === size &&
           item.selectedColor === color &&
-          item.selectedStorage === storage &&
-          item.isRental === options?.isRental
+          item.selectedStorage === storage
       );
 
       if (existingIdx > -1) {
@@ -263,10 +261,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         quantity: qty,
         selectedSize: size,
         selectedColor: color,
-        selectedStorage: storage,
-        isRental: options?.isRental,
-        rentalDays: options?.rentalDays,
-        rentalDate: options?.rentalDate
+        selectedStorage: storage
       };
       return [...prev, newItem];
     });
@@ -314,14 +309,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Pricing calculations (ZAR)
   const cartSubtotal = cart.reduce((sum, item) => {
-    const itemPrice = item.isRental && item.product.rentalDetails
-      ? item.product.rentalDetails.dailyRate * (item.rentalDays || 1)
-      : item.product.price;
-    return sum + itemPrice * item.quantity;
+    return sum + item.product.price * item.quantity;
   }, 0);
 
-  // Free delivery threshold R 1500 in South Africa
-  const deliveryFee = cartSubtotal > 1500 || cartSubtotal === 0 ? 0 : 120;
+  // Free delivery threshold R 3000 in South Africa
+  const deliveryFee = cartSubtotal > 3000 || cartSubtotal === 0 ? 0 : 120;
   const cartDiscount = Math.round((cartSubtotal * promoDiscountPercent) / 100);
   const cartTotal = Math.max(0, cartSubtotal - cartDiscount + deliveryFee);
   const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
@@ -378,10 +370,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentOrder(order);
   };
 
-  const addRentalBooking = (booking: RentalBookingRequest) => {
-    setRentalBookings((prev) => [booking, ...prev]);
-  };
-
   return (
     <ShopContext.Provider
       value={{
@@ -427,8 +415,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addOrder,
         currentOrder,
         setCurrentOrder,
-        rentalBookings,
-        addRentalBooking,
         isCompareModalOpen,
         setIsCompareModalOpen,
         authUser,

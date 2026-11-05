@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useShop } from '../context/ShopContext';
-import { PRODUCTS } from '../data/products';
+import { HIDDEN_STORE_CATEGORIES, PRODUCTS } from '../data/products';
 import { ProductCard } from '../components/ProductCard';
 import { ProductCategory } from '../types';
 import {
@@ -11,6 +11,8 @@ import {
   Sparkles,
   ChevronDown
 } from 'lucide-react';
+
+const SHOP_PRODUCTS = PRODUCTS.filter((product) => !HIDDEN_STORE_CATEGORIES.has(product.category));
 
 export const ShopPage: React.FC = () => {
   const { navigateTo } = useShop();
@@ -29,25 +31,25 @@ export const ShopPage: React.FC = () => {
   // Extract unique brands, sizes, colors for filter dropdowns
   const availableBrands = useMemo(() => {
     const set = new Set<string>();
-    PRODUCTS.forEach((p) => set.add(p.brand));
+    SHOP_PRODUCTS.forEach((p) => set.add(p.brand));
     return Array.from(set).sort();
   }, []);
 
   const availableSizes = useMemo(() => {
     const set = new Set<string>();
-    PRODUCTS.forEach((p) => p.sizes?.forEach((s) => set.add(s)));
+    SHOP_PRODUCTS.forEach((p) => p.sizes?.forEach((s) => set.add(s)));
     return Array.from(set).sort();
   }, []);
 
   const availableColors = useMemo(() => {
     const set = new Set<string>();
-    PRODUCTS.forEach((p) => p.colors?.forEach((c) => set.add(c)));
+    SHOP_PRODUCTS.forEach((p) => p.colors?.forEach((c) => set.add(c)));
     return Array.from(set).sort();
   }, []);
 
   // Filtered and sorted products
   const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => {
+    return SHOP_PRODUCTS.filter((p) => {
       // Category
       if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
       // Brand
@@ -103,10 +105,7 @@ export const ShopPage: React.FC = () => {
     { id: 'sneakers', label: 'Sneakers' },
     { id: 'phones', label: 'Phones' },
     { id: 'accessories', label: 'Accessories' },
-    { id: 'football', label: 'Football' },
-    { id: 'hubblies', label: 'Hubblies' },
-    { id: 'shisha-accessories', label: 'Shisha Coals & Materials' },
-    { id: 'vapes', label: 'Vapes (18+)' }
+    { id: 'football', label: 'Football' }
   ];
 
   return (

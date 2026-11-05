@@ -21,16 +21,15 @@ import {
   Code2,
   Copy,
   Check,
-  Calendar,
   Layers,
   Database,
   Download
 } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
-  const { authUser, orders, rentalBookings, navigateTo, setIsDownloadModalOpen } = useShop();
+  const { authUser, orders, navigateTo, setIsDownloadModalOpen } = useShop();
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'rentals' | 'products' | 'supabase'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'supabase'>('orders');
   const [dbOrders, setDbOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -49,8 +48,6 @@ export const AdminDashboardPage: React.FC = () => {
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductStock, setNewProductStock] = useState('10');
   const [newProductDesc, setNewProductDesc] = useState('');
-  const [newProductIsRental, setNewProductIsRental] = useState(false);
-  const [newProductRentalPrice, setNewProductRentalPrice] = useState('');
   const [newProductSizes, setNewProductSizes] = useState('UK 7, UK 8, UK 9, UK 10, UK 11');
   const [submittingProduct, setSubmittingProduct] = useState(false);
 
@@ -168,7 +165,6 @@ export const AdminDashboardPage: React.FC = () => {
     e.preventDefault();
     const parsedPrice = Number(newProductPrice);
     const parsedStock = Number(newProductStock);
-    const parsedRentalPrice = Number(newProductRentalPrice);
     if (!newProductName.trim() || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
       showNotification('Enter a product name and a valid price greater than zero.');
       return;
@@ -177,11 +173,6 @@ export const AdminDashboardPage: React.FC = () => {
       showNotification('Stock quantity must be a whole number of zero or more.');
       return;
     }
-    if (newProductIsRental && (!Number.isFinite(parsedRentalPrice) || parsedRentalPrice <= 0)) {
-      showNotification('Enter a valid daily rental price greater than zero.');
-      return;
-    }
-
     setSubmittingProduct(true);
     const sizesArray = newProductSizes.split(',').map((s) => s.trim()).filter(Boolean);
     const productCategory = newProductCategory as Product['category'];
@@ -201,19 +192,10 @@ export const AdminDashboardPage: React.FC = () => {
       description: newProductDesc || 'Exclusive premium addition to the BROERHOOD36 vault.',
       inStock: true,
       sizes: sizesArray,
-      isRental: newProductIsRental,
       specifications: {
         Authenticity: '100% Guaranteed Genuine',
         Condition: 'Brand New In Box'
-      },
-      rentalDetails: newProductIsRental
-        ? {
-            dailyRate: parsedRentalPrice || parsedPrice,
-            deposit: parsedPrice * 2,
-            durationOptions: ['24 Hours', '48 Hours', 'Weekend Hire'],
-            whatsIncluded: ['German Hubbly Pipe', '1000W Stove', 'Coconut Coals', 'Silicone Hose']
-          }
-        : undefined
+      }
     };
 
     // Try saving to Supabase
@@ -225,8 +207,6 @@ export const AdminDashboardPage: React.FC = () => {
         stock: parsedStock,
         description: newProductDesc,
         images: fallbackImage ? [fallbackImage] : [],
-        is_rental: newProductIsRental,
-        rental_price_per_day: newProductIsRental ? parsedRentalPrice : null,
         sizes: sizesArray
       });
       if (error) throw error;
@@ -243,8 +223,6 @@ export const AdminDashboardPage: React.FC = () => {
     setNewProductName('');
     setNewProductPrice('');
     setNewProductDesc('');
-    setNewProductIsRental(false);
-    setNewProductRentalPrice('');
     setSubmittingProduct(false);
   };
 
@@ -319,7 +297,7 @@ export const AdminDashboardPage: React.FC = () => {
             BROERHOOD<span className="text-rose-500">36</span> ADMIN PORTAL
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time orders, German Hubbly rentals, product catalog, Supabase &amp; WhatsApp routing.
+            Real-time orders, product catalog, Supabase &amp; WhatsApp routing.
           </p>
         </div>
 
@@ -355,7 +333,7 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-1.5">
           <span className="text-[11px] text-slate-400 uppercase font-semibold">Total Revenue (ZAR)</span>
           <div className="font-heading font-black text-2xl text-white font-mono-num">
@@ -373,16 +351,6 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
           <span className="text-[10px] text-slate-400 block">
             Supabase + COD orders
-          </span>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-1.5">
-          <span className="text-[11px] text-slate-400 uppercase font-semibold">Hubbly Rentals</span>
-          <div className="font-heading font-black text-2xl text-rose-400 font-mono-num">
-            {rentalBookings.length}
-          </div>
-          <span className="text-[10px] text-slate-400 block">
-            Active event bookings
           </span>
         </div>
 
@@ -416,18 +384,6 @@ export const AdminDashboardPage: React.FC = () => {
         >
           <Package className="w-4 h-4" />
           <span>Customer Orders ({dbOrders.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('rentals')}
-          className={`pb-3 px-4 border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'rentals'
-              ? 'border-rose-500 text-white'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Calendar className="w-4 h-4" />
-          <span>Hubbly Rentals ({rentalBookings.length})</span>
         </button>
 
         <button
@@ -621,95 +577,6 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: GERMAN HUBBLY RENTALS */}
-      {activeTab === 'rentals' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-            <div>
-              <h3 className="font-heading font-bold text-base text-white">
-                German Hubbly Hire Reservations ({rentalBookings.length})
-              </h3>
-              <p className="text-xs text-slate-400">
-                Complete shisha set rentals with 1000W electric stove, coconut coals, and premium flavours.
-              </p>
-            </div>
-            <button
-              onClick={() => navigateTo('rentals')}
-              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Hire Booking</span>
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[850px]">
-              <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px] font-bold">
-                <tr>
-                  <th className="p-4">Booking Ref</th>
-                  <th className="p-4">Customer</th>
-                  <th className="p-4">WhatsApp Direct</th>
-                  <th className="p-4">Selected Pipe</th>
-                  <th className="p-4">Event Date</th>
-                  <th className="p-4">Duration &amp; Qty</th>
-                  <th className="p-4">Location</th>
-                  <th className="p-4">Deposit + Fee</th>
-                  <th className="p-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                {rentalBookings.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="p-12 text-center text-slate-500">
-                      No Hubbly rental bookings submitted yet.
-                    </td>
-                  </tr>
-                ) : (
-                  rentalBookings.map((r) => {
-                    const cleanPhone = r.phone.replace(/\+/g, '').replace(/\s/g, '');
-                    return (
-                      <tr key={r.id} className="hover:bg-slate-800/40 transition">
-                        <td className="p-4 font-mono font-bold text-rose-400">#{r.id}</td>
-                        <td className="p-4 font-semibold text-white">{r.customerName}</td>
-                        <td className="p-4">
-                          <a
-                            href={`https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(
-                              r.customerName
-                            )}%2C%20confirming%20your%20BROERHOOD36%20German%20Hubbly%20Rental%20%23${r.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5" />
-                            <span>+{cleanPhone}</span>
-                          </a>
-                        </td>
-                        <td className="p-4 font-medium text-white">{r.product.name}</td>
-                        <td className="p-4 text-slate-300">{r.rentalDate}</td>
-                        <td className="p-4 text-slate-300">
-                          {r.durationDays} Day(s) ({r.quantity}x unit)
-                        </td>
-                        <td className="p-4 max-w-xs truncate text-slate-400" title={r.eventLocation}>
-                          {r.eventLocation}
-                        </td>
-                        <td className="p-4 font-mono-num font-bold text-white">
-                          R {r.totalAmount.toLocaleString()}
-                        </td>
-                        <td className="p-4">
-                          <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                            {r.status || 'Confirmed'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* TAB 3: PRODUCTS CATALOG & ADD NEW */}
       {activeTab === 'products' && (
         <div className="space-y-8">
@@ -753,10 +620,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <option value="phones">Smartphones (iPhone/Samsung/Honor)</option>
                   <option value="accessories">Phone Accessories</option>
                   <option value="football">Football Match Shirts</option>
-                  <option value="hubblies">German Hubblies (Shisha)</option>
-                  <option value="shisha-accessories">Shisha Accessories &amp; Coals</option>
                   <option value="vapes">Vapes (18+)</option>
-                  <option value="rentals">Hubbly Rentals</option>
                 </select>
               </div>
 
@@ -805,30 +669,7 @@ export const AdminDashboardPage: React.FC = () => {
                 />
               </div>
 
-              <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-800">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-medium">
-                  <input
-                    type="checkbox"
-                    checked={newProductIsRental}
-                    onChange={(e) => setNewProductIsRental(e.target.checked)}
-                    className="w-4 h-4 rounded text-blue-600 bg-slate-950 border-slate-700"
-                  />
-                  <span>Available for Daily Rental Hire?</span>
-                </label>
-
-                {newProductIsRental && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400">Daily Rental Fee (R):</span>
-                    <input
-                      type="number"
-                      value={newProductRentalPrice}
-                      onChange={(e) => setNewProductRentalPrice(e.target.value)}
-                      placeholder="e.g. 450"
-                      className="w-32 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white"
-                    />
-                  </div>
-                )}
-
+              <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center justify-end gap-4 pt-2 border-t border-slate-800">
                 <button
                   type="submit"
                   disabled={submittingProduct}

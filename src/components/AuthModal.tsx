@@ -250,7 +250,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs text-slate-400">
                 {isLogin
                   ? 'Sign in to access order tracking and saved wishlists.'
-                  : 'Join Broerhood36 to unlock member drops and rental bookings.'}
+                  : 'Join Broerhood36 to unlock member drops and order tracking.'}
               </p>
             </div>
 

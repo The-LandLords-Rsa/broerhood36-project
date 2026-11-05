@@ -42,10 +42,10 @@ export const AboutPage: React.FC = () => {
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            South African youth have always driven culture—from the fashion subcultures in Soweto and Braamfontein to the creative energy across Cape Town and Durban. Yet for too long, buying genuine hype sneakers meant taking risks on shady peer-to-peer sellers, flagship phones came with exorbitant mall markups, and luxury German hookahs were near impossible to source locally.
+            South African youth have always driven culture—from the fashion subcultures in Soweto and Braamfontein to the creative energy across Cape Town and Durban. We bring trusted sneakers, mobile technology, football kits, and everyday accessories together in one local marketplace.
           </p>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            We founded <strong className="text-white">BROERHOOD36</strong> to build an authentic, uncompromising marketplace where real enthusiasts could find verified grails, cutting-edge mobile tech, official football shirts, and German precision shisha rentals in one seamless digital home.
+            We founded <strong className="text-white">BROERHOOD36</strong> to build an authentic, uncompromising marketplace where people can find verified sneakers, mobile tech, phone accessories, and official football shirts in one place.
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-2">
@@ -106,7 +106,7 @@ export const AboutPage: React.FC = () => {
             </div>
             <h3 className="font-heading font-bold text-lg text-white">Zero Compromise on Quality</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Every sneaker is physically inspected, every phone is genuine ICASA-compliant stock, and every German shisha uses V2A surgical-grade steel.
+              Every sneaker is physically inspected, every phone is genuine ICASA-compliant stock, and every football kit is carefully checked before dispatch.
             </p>
           </div>
 

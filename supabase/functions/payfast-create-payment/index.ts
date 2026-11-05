@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { createPayFastSignature } from '../_shared/payfast.ts';
+import { createPayFastSignature, getPayFastBaseUrl } from '../_shared/payfast.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -207,7 +207,7 @@ Deno.serve(async (request: Request) => {
     parameters.signature = createPayFastSignature(parameters, passphrase);
 
     return jsonResponse({
-      action: 'https://sandbox.payfast.co.za/eng/process',
+      action: `${getPayFastBaseUrl()}/eng/process`,
       parameters,
       orderId,
       total

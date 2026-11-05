@@ -130,8 +130,12 @@ export const CheckoutPage: React.FC = () => {
         throw error;
       }
       if (data?.error) throw new Error(data.error);
+      if (!data) throw new Error('Secure checkout returned no payment details. Please try again.');
+      const paymentAction = new URL(data.action);
       if (
-        data?.action !== 'https://sandbox.payfast.co.za/eng/process' ||
+        paymentAction.protocol !== 'https:' ||
+        !['sandbox.payfast.co.za', 'www.payfast.co.za'].includes(paymentAction.hostname) ||
+        paymentAction.pathname !== '/eng/process' ||
         !data.parameters ||
         Object.values(data.parameters).some((value) => typeof value !== 'string') ||
         typeof data.total !== 'number' ||
@@ -414,7 +418,7 @@ export const CheckoutPage: React.FC = () => {
               SECURE ONLINE CHECKOUT
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              PayFast is currently in sandbox mode. Test payments do not move real money. Sign in using the same email address entered above.
+              Pay using PayFast's secure hosted checkout. Payment is confirmed only after PayFast verifies it with our server.
             </p>
           </div>
 
@@ -430,13 +434,11 @@ export const CheckoutPage: React.FC = () => {
                   className="accent-blue-500"
                 />
                 <div>
-                  <strong className="text-sm text-white block">PayFast Sandbox</strong>
-                  <span className="text-xs text-slate-400">Test checkout · no real charge</span>
+                  <strong className="text-sm text-white block">PayFast</strong>
+                  <span className="text-xs text-slate-400">Secure hosted payment</span>
                 </div>
               </div>
-              <span className="text-xs font-bold text-amber-300 bg-amber-950 px-2 py-0.5 rounded border border-amber-800">
-                TEST MODE
-              </span>
+              <Lock className="w-4 h-4 text-emerald-400" aria-label="Secure payment" />
             </label>
 
             {/* Ozow Instant EFT */}

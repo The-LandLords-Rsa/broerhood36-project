@@ -3,10 +3,7 @@ export type ProductCategory =
   | 'phones'
   | 'accessories'
   | 'football'
-  | 'hubblies'
-  | 'shisha-accessories'
-  | 'vapes'
-  | 'rentals';
+  | 'vapes';
 
 export interface Product {
   id: string;
@@ -39,13 +36,6 @@ export interface Product {
   jerseyType?: 'Home' | 'Away' | 'Third';
   season?: string;
   league?: string;
-  isRental?: boolean;
-  rentalDetails?: {
-    dailyRate: number;
-    deposit: number;
-    durationOptions: string[];
-    whatsIncluded: string[];
-  };
 }
 
 export interface CartItem {
@@ -55,9 +45,6 @@ export interface CartItem {
   selectedSize?: string;
   selectedColor?: string;
   selectedStorage?: string;
-  isRental?: boolean;
-  rentalDays?: number;
-  rentalDate?: string;
 }
 
 export interface OrderCustomer {
@@ -112,24 +99,6 @@ export interface CustomerReview {
   comment: string;
   verifiedPurchase: boolean;
   productReviewed: string;
-}
-
-export interface RentalBookingRequest {
-  id: string;
-  product: Product;
-  customerName: string;
-  email: string;
-  phone: string;
-  rentalDate: string;
-  durationDays: number;
-  quantity: number;
-  eventType: string;
-  eventLocation: string;
-  deliveryNotes: string;
-  dailyRate: number;
-  deposit: number;
-  totalAmount: number;
-  status: 'Pending Review' | 'Confirmed' | 'Dispatched';
 }
 
 export interface PhoneComparisonSpec {

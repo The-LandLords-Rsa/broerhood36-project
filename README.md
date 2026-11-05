@@ -1,6 +1,6 @@
 # BROERHOOD36 - South African E-Commerce Marketplace
 
-South Africa's premier youth marketplace for authentic sneakers, flagship mobile technology, official football kits, and German precision shisha rentals.
+South Africa's premier youth marketplace for authentic sneakers, flagship mobile technology, official football kits, and phone accessories.
 
 ## 🚀 How to Run Locally in VSCode
 
@@ -33,13 +33,12 @@ Visit [http://localhost:3000](http://localhost:3000) or the port displayed in yo
 - **Payment & Order Routing**:
   - Direct WhatsApp Dispatch to **both lines**:
     - **Line 1 (Sales & Kicks)**: `+27 64 901 3150`
-    - **Line 2 (Rentals & Dispatch)**: `+27 69 978 1083`
+    - **Line 2 (Dispatch)**: `+27 69 978 1083`
   - Central Email Routing: `broer.hood.36@gmail.com`
   - PayFast sandbox checkout (test mode only; live payments are not configured)
 - **Key Modules**:
   - Shopping Bag / Cart with promo codes & threshold tracking
   - Server-verified PayFast payment notifications before orders are marked paid
-  - German Hubbly Rental Booking Engine with date picker & add-ons
   - Order status and courier tracking details stored in Supabase
   - Dedicated Multi-Channel Enquiry Portal
   - Admin Management Console with live order synchronization

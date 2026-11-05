@@ -26,7 +26,7 @@ export const Footer: React.FC = () => {
             </div>
             <div>
               <h4 className="text-white font-semibold text-sm">100% Authentic Guarantee</h4>
-              <p className="text-xs text-slate-400 mt-0.5">Verified streetwear kicks, original German hubblies, and ICASA-approved mobile phones.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Verified streetwear kicks, official football kits, and ICASA-approved mobile phones.</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -35,7 +35,7 @@ export const Footer: React.FC = () => {
             </div>
             <div>
               <h4 className="text-white font-semibold text-sm">Direct WhatsApp Support</h4>
-              <p className="text-xs text-slate-400 mt-0.5">Chat instantly with our Johannesburg team for sizing advice or rental reservations.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Chat instantly with our Johannesburg team for product advice or delivery support.</p>
             </div>
           </div>
         </div>
@@ -55,7 +55,7 @@ export const Footer: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              Your style. Your tech. Your hood. Broerhood36 brings the best of global streetwear sneakers, flagship mobile technology, authentic football match kits, and German precision shisha lifestyle to the South African youth culture.
+              Your style. Your tech. Your hood. Broerhood36 brings global streetwear sneakers, flagship mobile technology, authentic football match kits, and phone accessories to South African youth culture.
             </p>
             <div className="pt-2 flex flex-wrap items-center gap-2">
               <a
@@ -105,40 +105,15 @@ export const Footer: React.FC = () => {
                   Football Match Kits
                 </button>
               </li>
-              <li>
-                <button onClick={() => navigateTo('hubblies')} className="hover:text-white transition-colors">
-                  German Hubblies
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigateTo('shisha-accessories')} className="hover:text-white transition-colors">
-                  Shisha Materials &amp; Coals
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigateTo('vapes')} className="hover:text-white transition-colors">
-                  Vapes (18+ Verified)
-                </button>
-              </li>
             </ul>
           </div>
 
-          {/* Services & Rentals Col */}
+          {/* Services Col */}
           <div>
             <h4 className="text-white font-heading font-bold text-sm tracking-wide uppercase mb-4">
               Services &amp; Experience
             </h4>
             <ul className="space-y-2.5 text-xs">
-              <li>
-                <button onClick={() => navigateTo('rentals')} className="hover:text-white transition-colors">
-                  Hubbly Rental Bookings
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigateTo('shisha-accessories')} className="hover:text-white transition-colors">
-                  Build Your Setup (Bundle)
-                </button>
-              </li>
               <li>
                 <button onClick={() => navigateTo('phones')} className="hover:text-white transition-colors">
                   Phone Comparison Tool

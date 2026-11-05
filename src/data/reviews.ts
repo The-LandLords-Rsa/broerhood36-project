@@ -12,16 +12,6 @@ export const CUSTOMER_REVIEWS: CustomerReview[] = [
     productReviewed: 'Air Jordan 4 Retro "Military Black"'
   },
   {
-    id: 'rev-2',
-    author: 'Liam van der Merwe',
-    location: 'Camps Bay, Cape Town',
-    rating: 5,
-    date: '1 week ago',
-    comment: 'Rented the Steamulation Pro X German Hubbly for our rooftop braai gathering. The service was insane—they brought everything: 1000W coal stove, CocoUrth coals, flavours, and clean hoses. Best smoke session we ever had in Cape Town!',
-    verifiedPurchase: true,
-    productReviewed: 'Steamulation Pro X III German Stainless Hubbly (Rental)'
-  },
-  {
     id: 'rev-3',
     author: 'Nandi Dlamini',
     location: 'Umhlanga, Durban',
@@ -46,7 +36,7 @@ export const CUSTOMER_REVIEWS: CustomerReview[] = [
 export const TRUST_FEATURES = [
   {
     title: 'Quality Products',
-    description: '100% genuine verified streetwear kicks, authentic German stainless steel hubblies, and official brand smartphones with manufacturer warranty.',
+    description: '100% genuine verified streetwear kicks, phone accessories, and official brand smartphones with manufacturer warranty.',
     iconName: 'ShieldCheck'
   },
   {

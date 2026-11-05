@@ -41,12 +41,8 @@ export const ContactPage: React.FC = () => {
       a: 'Yes, without exception. Every single pair of Nike, Jordan, Adidas, and New Balance kicks passes rigorous multi-point physical verification before entering our inventory. We guarantee 100% authenticity or a 200% refund.'
     },
     {
-      q: 'How does German Hubbly rental work?',
-      a: 'Select your preferred German Hubbly on our Rentals page, choose your event date and duration, and enter your delivery venue. We deliver the sanitized hookah along with a 1000W coal stove burner, organic coals, and flavours. A refundable security deposit is collected and released immediately upon return inspection.'
-    },
-    {
       q: 'What payment methods do you support?',
-      a: 'PayFast is being configured in sandbox mode for testing only. No real payments can be made, and other payment methods are not currently available.'
+      a: 'PayFast securely processes online payments. Live payments require the store owner to configure an approved PayFast merchant account.'
     }
   ];
 
@@ -100,7 +96,7 @@ export const ContactPage: React.FC = () => {
           WE’RE HERE FOR THE HOOD
         </h1>
         <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-          Questions regarding sneaker sizing, smartphone stock, football jerseys, or German hubbly rentals? Connect directly with our team on our two official WhatsApp numbers or via email.
+          Questions regarding sneaker sizing, smartphone stock, phone accessories, or football jerseys? Connect directly with our team on our two official WhatsApp numbers or via email.
         </p>
       </div>
 
@@ -148,12 +144,12 @@ export const ContactPage: React.FC = () => {
               +{CONFIG.WHATSAPP_2}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              German Hubbly event hire, delivery dispatch logistics &amp; urgent customer care.
+              Delivery dispatch logistics &amp; urgent customer care.
             </p>
           </div>
           <a
             href={`https://wa.me/${CONFIG.WHATSAPP_2}?text=${encodeURIComponent(
-              'Hello BROERHOOD36 (Line 2), I have an inquiry regarding dispatch/rentals.'
+              'Hello BROERHOOD36 (Line 2), I have an inquiry regarding delivery dispatch.'
             )}`}
             target="_blank"
             rel="noreferrer"
@@ -282,7 +278,6 @@ export const ContactPage: React.FC = () => {
                     <option value="Product / Sizing Inquiry">Product / Sizing Inquiry</option>
                     <option value="Smartphone Stock Check">Smartphone Stock Check</option>
                     <option value="Football Jersey Sizing">Football Jersey Sizing</option>
-                    <option value="German Hubbly Rental Booking">German Hubbly Rental Booking</option>
                     <option value="Order Tracking & Logistics">Order Tracking &amp; Logistics</option>
                     <option value="Wholesale / Bulk Orders">Wholesale / Bulk Orders</option>
                   </select>
@@ -431,7 +426,7 @@ export const ContactPage: React.FC = () => {
                   </a>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-slate-300">
-                  <span className="text-slate-400">Rentals &amp; Logistics:</span>
+                  <span className="text-slate-400">Dispatch &amp; Logistics:</span>
                   <a href={`https://wa.me/${CONFIG.WHATSAPP_2}`} className="text-emerald-400 font-bold hover:underline flex items-center gap-1">
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>Line 2: +{CONFIG.WHATSAPP_2}</span>

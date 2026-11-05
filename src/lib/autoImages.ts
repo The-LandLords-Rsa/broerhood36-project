@@ -82,6 +82,66 @@ const photoIds: Record<UnsplashCategory, Record<GeneratedImageView, string[]>> =
   }
 };
 
+const phoneImageSources: Record<string, string[]> = {
+  iphone13: [
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-13-01.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-13-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-13-3.jpg'
+  ],
+  iphone14: [
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-14-3.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-14-2.jpg'
+  ],
+  iphone15: [
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-15-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-15-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-15-3.jpg'
+  ],
+  iphone16: [
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-16-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-16-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-16-3.jpg'
+  ],
+  iphone17: [
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-17-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-17-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-17-3.jpg'
+  ],
+  iphone16promax: [
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-16-pro-max-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-16-pro-max-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-16-pro-max-3.jpg'
+  ],
+  galaxys23ultra: [
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s23-ultra-5g-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s23-ultra-5g-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s23-ultra-5g-3.jpg'
+  ],
+  galaxys24ultra: [
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s24-ultra-5g-sm-s928-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s24-ultra-5g-sm-s928-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s24-ultra-5g-sm-s928-3.jpg'
+  ],
+  galaxys25ultra: [
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s25-ultra-sm-s938-1.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s25-ultra-sm-s938-2.jpg',
+    'https://fdn2.gsmarena.com/vv/pics/samsung/samsung-galaxy-s25-ultra-sm-s938-3.jpg'
+  ]
+};
+
+const getPhoneImage = (name: string, view: GeneratedImageView, fallback: boolean) => {
+  const normalizedName = normalizeName(name);
+  const model = Object.keys(phoneImageSources)
+    .sort((first, second) => second.length - first.length)
+    .find((key) => normalizedName.includes(key));
+  const sources = model ? phoneImageSources[model] : undefined;
+  if (!sources) return '';
+
+  const viewIndex: Record<GeneratedImageView, number> = { front: 0, side: 1, back: 2, top: 0 };
+  const index = (viewIndex[view] + Number(fallback)) % sources.length;
+  return sources[index];
+};
+
 const getSlug = (name: string) =>
   name
     .normalize('NFKD')
@@ -161,6 +221,10 @@ export function getCategoryProductImage(
   fallback = false
 ) {
   if (category === 'football-kits') return getFootballJerseyImage(name);
+  if (category === 'phones') {
+    const phoneImage = getPhoneImage(name, view, fallback);
+    if (phoneImage) return phoneImage;
+  }
 
   const candidates = photoIds[category][view];
   const primaryIndex = getNameHash(name) % candidates.length;

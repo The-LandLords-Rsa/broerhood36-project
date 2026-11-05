@@ -4,7 +4,6 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
 import { ProductDetailModal } from './components/ProductDetailModal';
-import { AgeGateModal } from './components/AgeGateModal';
 import { PhoneCompareModal } from './components/PhoneCompareModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { AuthModal } from './components/AuthModal';
@@ -16,10 +15,6 @@ import { SneakersPage } from './pages/SneakersPage';
 import { PhonesPage } from './pages/PhonesPage';
 import { AccessoriesPage } from './pages/AccessoriesPage';
 import { FootballPage } from './pages/FootballPage';
-import { HubbliesPage } from './pages/HubbliesPage';
-import { ShishaAccessoriesPage } from './pages/ShishaAccessoriesPage';
-import { VapesPage } from './pages/VapesPage';
-import { RentalsPage } from './pages/RentalsPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { EnquiryPage } from './pages/EnquiryPage';
@@ -64,10 +59,6 @@ const AppContent: React.FC = () => {
       case 'phones': return <PhonesPage />;
       case 'accessories': return <AccessoriesPage />;
       case 'football': return <FootballPage />;
-      case 'hubblies': return <HubbliesPage />;
-      case 'shisha-accessories': return <ShishaAccessoriesPage />;
-      case 'vapes': return <VapesPage />;
-      case 'rentals': return <RentalsPage />;
       case 'about': return <AboutPage />;
       case 'contact': return <ContactPage />;
       case 'enquiry':
@@ -100,7 +91,6 @@ const AppContent: React.FC = () => {
       </main>
       <Footer />
       <ProductDetailModal />
-      <AgeGateModal />
       <PhoneCompareModal />
       <GlobalSearchModal />
       <AuthModal

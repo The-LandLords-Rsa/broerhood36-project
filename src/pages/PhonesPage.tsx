@@ -139,6 +139,7 @@ export const PhonesPage: React.FC = () => {
                   <img
                     src={getProductImage(phone, 'front')}
                     alt={phone.name}
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover rounded-lg"
                   />
                   {phone.discountPercent && (

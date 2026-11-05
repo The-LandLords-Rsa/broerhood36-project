@@ -81,11 +81,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               NEW
             </span>
           )}
-          {product.rentalDetails && (
-            <span className="bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30 font-bold text-[9px] px-2 py-0.5 rounded-sm">
-              RENTAL
-            </span>
-          )}
         </div>
 
         <button

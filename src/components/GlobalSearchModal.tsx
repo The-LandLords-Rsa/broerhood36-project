@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useShop } from '../context/ShopContext';
-import { PRODUCTS } from '../data/products';
+import { HIDDEN_STORE_CATEGORIES, PRODUCTS } from '../data/products';
 import { getProductImage } from '../lib/autoImages';
 import { Search, X, ArrowRight, TrendingUp } from 'lucide-react';
 
@@ -23,21 +23,20 @@ export const GlobalSearchModal: React.FC = () => {
     }
   }, [isSearchOpen]);
 
-  const quickPicks = ['iPhone', 'Nike', 'Hubbly', 'Samsung', 'Arsenal', 'Vape', 'Charger'];
+  const quickPicks = ['iPhone', 'Nike', 'Samsung', 'Arsenal', 'Charger'];
 
   const results = useMemo(() => {
     const query = inputVal.trim().toLowerCase();
     if (!query) return [];
 
     return PRODUCTS.filter((p) => {
+      if (HIDDEN_STORE_CATEGORIES.has(p.category)) return false;
       const matchName = p.name.toLowerCase().includes(query);
       const matchBrand = p.brand.toLowerCase().includes(query);
       const matchCategory = p.category.toLowerCase().includes(query);
       const matchSub = p.subcategory?.toLowerCase().includes(query) || false;
       const matchDesc = p.description.toLowerCase().includes(query);
 
-      // Special search logic mentioned in prompt:
-      // "iPhone" -> phones and phone accessories
       if (query === 'iphone') {
         return (
           p.brand.toLowerCase().includes('iphone') ||
@@ -45,7 +44,6 @@ export const GlobalSearchModal: React.FC = () => {
           p.name.toLowerCase().includes('iphone')
         );
       }
-      // "Nike" -> sneakers and products
       if (query === 'nike') {
         return (
           p.brand.toLowerCase().includes('nike') ||
@@ -53,11 +51,6 @@ export const GlobalSearchModal: React.FC = () => {
           p.name.toLowerCase().includes('nike')
         );
       }
-      // "Hubbly" -> hubblies and shisha accessories
-      if (query === 'hubbly' || query === 'shisha') {
-        return p.category === 'hubblies' || p.category === 'shisha-accessories';
-      }
-
       return matchName || matchBrand || matchCategory || matchSub || matchDesc;
     });
   }, [inputVal]);
@@ -75,7 +68,7 @@ export const GlobalSearchModal: React.FC = () => {
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Search kicks, iPhones, Samsung, hubblies, jerseys, vapes..."
+            placeholder="Search kicks, phones, accessories, and jerseys..."
             className="w-full bg-transparent text-white text-base sm:text-lg focus:outline-none placeholder-slate-500 font-medium"
           />
           {inputVal && (
@@ -117,7 +110,7 @@ export const GlobalSearchModal: React.FC = () => {
             <div className="py-12 text-center text-slate-400">
               <p className="text-sm font-medium">No results found for "{inputVal}".</p>
               <p className="text-xs text-slate-500 mt-1">
-                Try searching "iPhone", "Nike", "Hubbly", "Charger" or "Jersey".
+                Try searching "iPhone", "Nike", "Samsung", "Charger" or "Jersey".
               </p>
             </div>
           )}

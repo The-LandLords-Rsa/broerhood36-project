@@ -1,6 +1,6 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
-import { PRODUCTS, CATEGORIES_LIST, CATEGORY_HERO_IMAGES } from '../data/products';
+import { PRODUCTS, CATEGORIES_LIST, CATEGORY_HERO_IMAGES, HIDDEN_STORE_CATEGORIES } from '../data/products';
 import { CUSTOMER_REVIEWS, TRUST_FEATURES } from '../data/reviews';
 import { ProductCard } from '../components/ProductCard';
 import {
@@ -20,7 +20,7 @@ import {
 export const HomePage: React.FC = () => {
   const { navigateTo } = useShop();
 
-  const trendingProducts = PRODUCTS.filter((p) => p.isTrending || p.isFeatured).slice(0, 8);
+  const trendingProducts = PRODUCTS.filter((p) => !HIDDEN_STORE_CATEGORIES.has(p.category) && (p.isTrending || p.isFeatured)).slice(0, 8);
 
   const getFeatureIcon = (name: string) => {
     switch (name) {
@@ -87,15 +87,11 @@ export const HomePage: React.FC = () => {
               {/* Hero highlights */}
               <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-800/80 text-left max-w-lg mx-auto lg:mx-0">
                 <div>
-                  <div className="font-mono-num font-black text-xl text-white">100%</div>
-                  <div className="text-xs text-slate-400">Authentic Kicks</div>
-                </div>
-                <div>
-                  <div className="font-mono-num font-black text-xl text-white">24-48h</div>
+                  <div className="font-mono-num font-black text-xl text-white">1-3 Business Days</div>
                   <div className="text-xs text-slate-400">SA Delivery</div>
                 </div>
                 <div>
-                  <div className="font-mono-num font-black text-xl text-white">R 1,500+</div>
+                  <div className="font-mono-num font-black text-xl text-white">R 4,500+</div>
                   <div className="text-xs text-slate-400">Free Shipping</div>
                 </div>
               </div>
@@ -107,7 +103,7 @@ export const HomePage: React.FC = () => {
                 <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-slate-950">
                   <img
                     src={CATEGORY_HERO_IMAGES.hero}
-                    alt="Broerhood36 lifestyle collection - Sneakers, Smartphones, Hubbly and Jerseys"
+                    alt="Broerhood36 lifestyle collection featuring sneakers"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-700"
                   />
@@ -151,7 +147,7 @@ export const HomePage: React.FC = () => {
 
         {/* 7 Big Category Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {CATEGORIES_LIST.map((cat, idx) => (
+          {CATEGORIES_LIST.filter((category) => !HIDDEN_STORE_CATEGORIES.has(category.id)).map((cat, idx) => (
             <div
               key={cat.id}
               onClick={() => navigateTo(cat.route)}
